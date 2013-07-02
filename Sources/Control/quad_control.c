@@ -19,13 +19,13 @@ controlData_T controlData = {{0,0,0,0}, {0, 0, 0}, {0,0,0}, 0};
 //#define prop_gain_int
 //#define prop_gain_divide 8000
 
-#define int_gain_divide 8000
+#define int_gain_divide 2000
 
 #define der_gain_int (1)
 //#define der_gain_frac 2000
 //#define der_gain_divide
 
-#define integral_error_limit 300
+#define integral_error_limit 150
 
 vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 {
@@ -47,7 +47,8 @@ vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 	integral_out_prev = integral_out;
 	error_sat_prev = error_sat;
 
-	integral_out.z = 0;
+	integral_out.z = integral_out.y = integral_out.x = 0;
+	
 
 	ctrl_signal = dvsum(
 						dvsub(
@@ -117,13 +118,19 @@ frac gammainv(frac T, frac t1, frac t2, frac t3)
 	//return ((r > 0)? ((r < FRAC_1)? r : FRAC_1) : 0);
 }				
 
+/* 0 y 2: brazo rojo; 1, 3: brazo negro
+ * El hack es porque el motor 1 empuja menos, o el 3 empuja más.
+ */
 void control_mixer(frac thrust, vec3 torque, struct motorData* output)
 {
-	// 0 y 2: brazo rojo.
+	frac hack;
 	
-	output->speed[0] = 0;//gammainv(thrust, 0, torque.y, -torque.z);
-	output->speed[1] = gammainv(thrust, -torque.x, 0, torque.z);
-	output->speed[2] = 0;//gammainv(thrust, 0, -torque.y, -torque.z);
+	output->speed[0] = gammainv(thrust, 0, torque.y, -torque.z);
+	
+	hack = gammainv(thrust, -torque.x, 0, torque.z);
+	output->speed[1] = dtrunc(fexpand(hack) + fmul2(hack, 5000));
+	
+	output->speed[2] = gammainv(thrust, 0, -torque.y, -torque.z);
 	output->speed[3] = gammainv(thrust, torque.x, 0, torque.z);
 	
 	return;

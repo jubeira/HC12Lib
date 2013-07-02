@@ -25,6 +25,11 @@
 #define SHIFT_ID 2
 #define BATT_ID 3
 
+#define THRUST_STEP 200
+#define THRUST_LIMIT 10000
+#define THRUST_INC_PERIOD_MS 300
+#define THRUST_INIT 5000
+
 #define UP 0xFF
 #define DOWN 0x00
 
@@ -39,6 +44,7 @@ void dataReady_Srv(void);
 void dataReady_Ovf(void);
 void fifoOvf_Srv(void);
 void icFcn(void);
+void rti_ThrustRamp(void *data, rti_time period, rti_id id);
 
  
 struct tim_channelData dmu_timerData = {0,0};
@@ -57,6 +63,8 @@ bool have_to_output = 0;
 
 quat setpoint = UNIT_Q;
 
+
+
 void att_process(void)
 {
 	static int ccount = 0;
@@ -71,7 +79,7 @@ void att_process(void)
 		if (motData.mode == MOT_AUTO)
 		{
 			controlData.torque = adv_att_control(setpoint, controlData.QEst, controlData.bff_angle_rate);
-			controlData.thrust = 6000;
+			//controlData.thrust = 6000;
 		}
 		
 		if (++ccount == 20) {
@@ -278,7 +286,7 @@ void main (void)
 
 	mot_Init();
 			
-	rti_Register (rti_MotDelay, &motDelayDone, RTI_ONCE, RTI_MS_TO_TICKS(10000));
+	rti_Register (rti_MotDelay, &motDelayDone, RTI_ONCE, RTI_MS_TO_TICKS(3000));
 
 	while(!motDelayDone)
 		;
@@ -289,7 +297,7 @@ void main (void)
 	motData.speed[3] = S16_MAX;
 	
 	motDelayDone = _FALSE;
-	rti_Register (rti_MotDelay, &motDelayDone, RTI_ONCE, RTI_MS_TO_TICKS(10000));
+	rti_Register (rti_MotDelay, &motDelayDone, RTI_ONCE, RTI_MS_TO_TICKS(2000));
 
 	while(!motDelayDone)
 		;
@@ -306,6 +314,7 @@ void main (void)
 	while(!motDelayDone)
 		;
 
+	 rti_Register(rti_ThrustRamp, NULL, RTI_NOW, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS));
 	
 //	while (start == _FALSE)
 //		;
@@ -369,6 +378,20 @@ void main (void)
 	}
 
 #endif
+}
+
+
+void rti_ThrustRamp(void *data, rti_time period, rti_id id)
+{
+	if (controlData.thrust == 0)
+		controlData.thrust = THRUST_INIT;
+	
+	if (controlData.thrust + THRUST_STEP < THRUST_LIMIT)
+		controlData.thrust += THRUST_STEP;
+	else
+		rti_Cancel(id);
+
+	return;	
 }
 
 void measure (s32 measurement);
@@ -441,7 +464,6 @@ void measure (s32 measurement)
 void Init (void)
 {
 	PLL_SPEED(BUS_CLOCK_MHZ);
-	//PLL_SPEED(24);
 
  	// Modules that don't require interrupts to be enabled
 	tim_Init();

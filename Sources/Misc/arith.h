@@ -62,11 +62,12 @@ static dfrac fexpand(frac x)
 	return ((dfrac)x)<<(FRAC_BIT - 1);
 }
 
+#define f_to_extended(x) ((efrac)(x))
+
 static frac efclip(efrac x)
 {
 	return (x > FRAC_minus1)? ((x < FRAC_1)? x : FRAC_1) : FRAC_minus1;
 }
-
 
 static frac frac_sat (frac x, frac sat)
 {
