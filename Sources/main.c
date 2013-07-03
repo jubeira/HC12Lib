@@ -18,7 +18,6 @@
 
 //#include "batt.h"
 #include "lcd.h"
-#include "rfrx.h"
 #define DMU_TIMER 1
 #define C1_ID 0
 #define C2_ID 1
@@ -387,6 +386,9 @@ void main (void)
 	}
 
 #endif
+
+}
+
 
 void rti_ThrustRamp(void *data, rti_time period, rti_id id)
 {
