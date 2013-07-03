@@ -64,6 +64,15 @@ static dfrac fexpand(frac x)
 
 #define f_to_extended(x) ((efrac)(x))
 
+static efrac efdiv(frac dividend, efrac divisor)
+{
+	efrac result = f_to_extended(dividend);
+	result << (FRAC_BIT - 1);
+	
+	return result/divisor;
+
+}
+
 static frac efclip(efrac x)
 {
 	return (x > FRAC_minus1)? ((x < FRAC_1)? x : FRAC_1) : FRAC_minus1;
@@ -246,6 +255,17 @@ static vec3 vec_Mul(vec3 a, int f)
 	vec_MulInPlace(&c, f);
 
 	return c;
+}
+
+static evec3 vefdiv(vec3 a, efrac divisor)
+{
+	evec3 r;
+	
+	r.x = efdiv(a.x, divisor);
+	r.y = efdiv(a.y, divisor);
+	r.z = efdiv(a.x, divisor);
+	
+	return r;
 }
 
 static vec3 vfmul(vec3 a, frac f)

@@ -1,22 +1,21 @@
- #include "mc9s12xdp512.h"
- #include <stdio.h>
- #include "common.h"
+#include "mc9s12xdp512.h"
+#include <stdio.h>
+#include "common.h"
 #include "dmu.h"
 #include "dmu_macros.h"
 #include "rti.h"
 #include "timers.h"
- #include "pll.h"
+#include "pll.h"
 #include "quick_serial.h"
 #include "usonic.h"
 #include "error.h"
 #include "quad_control.h"
 #include "nlcf.h"
 #include "arith.h"
-#include "atd.h"
 #include "motors.h"
 #include "debug.h"
-
-//#include "batt.h"
+#include "nRF24L01+.h"
+#include "batt.h"
 #include "lcd.h"
 #define DMU_TIMER 1
 #define C1_ID 0
@@ -31,8 +30,6 @@
 
 #define UP 0xFF
 #define DOWN 0x00
-#include "nRF24L01+.h"
-#include <stdio.h>
 
 extern struct dmu_data_T dmu_data;
 
@@ -46,6 +43,7 @@ void dataReady_Ovf(void);
 void fifoOvf_Srv(void);
 void icFcn(void);
 void rti_ThrustRamp(void *data, rti_time period, rti_id id);
+void nrf_Callback (u8 *data, u8 length);
 
 
 struct tim_channelData dmu_timerData = {0,0};
@@ -62,7 +60,12 @@ extern controlData_T controlData;
 
 bool have_to_output = 0;
 
-quat setpoint = UNIT_Q;
+struct{
+	
+	quat attitude;
+	frac thrust;
+
+}setpoint = {UNIT_Q, 0};
 
 
 
@@ -70,7 +73,6 @@ void att_process(void)
 {
 	static int ccount = 0;
 
-	PORTA_PA0 = 1;
 	{
 		att_estim(dmu_measurements.gyro, dmu_measurements.accel,
 							&controlData.QEst, &controlData.bff_angle_rate);
@@ -79,8 +81,8 @@ void att_process(void)
 		// no empiece acumulando error.
 		if (motData.mode == MOT_AUTO)
 		{
-			controlData.torque = adv_att_control(setpoint, controlData.QEst, controlData.bff_angle_rate);
-			//controlData.thrust = 6000;
+			controlData.torque = adv_att_control(setpoint.attitude, controlData.QEst, controlData.bff_angle_rate);
+			controlData.thrust = setpoint.thrust;
 		}
 
 		#ifdef MAIN_OUTPUT
@@ -93,7 +95,6 @@ void att_process(void)
 		#endif
 
 	}
-	PORTA_PA0 = 0;
 }
 
 void sample_ready(void)
@@ -120,80 +121,12 @@ extern vec3 Bias;
 #define TIM6_DUTY 10000
 #define TIM7_DUTY 9375
 
-u8 batt1;
-u8 batt2;
-
-u8 rx_data;
+u8 start = _FALSE;
 
 void lowBatt(void)
 {
-	err_Throw("Low battery.\n");
+	err_Throw("Low batt.\n");
 }
-
-void c1_rx(u8 length)
-{/*
-	if (rx_data == UP) // Tocaron a
-	{
-		quat aux = {32488, 3024, -3024, 0};
-		setpoint = aux;
-	}//aumentar c1 (en lo que te pinte)
-	else // tocaron S
-	{
-		quat aux = UNIT_Q;
-		setpoint = aux;
-	}//bajar c1*/
-}
-
-void c2_rx(u8 length)
-{
-	if (rx_data == UP) // tocaron d
-	{
-		quat aux = {32488, -3024, 3024, 0};
-		setpoint = aux;
-		putchar('a');
-
-	}
-	if (rx_data == DOWN) //tocaron q
-	{
-		putchar('b');
-		motData.mode = MOT_MANUAL;
-
-		motData.speed[0] = 0;
-		motData.speed[1] = 0;
-		motData.speed[2] = 0;
-		motData.speed[3] = 0;
-
-//		while (1)
-//			;
-
-	}
-}
-u8 start = _FALSE;
-
-void shift_rx(u8 length)
-{
-	if (rx_data == UP)
-	{
-		putchar('c');
-		if (controlData.thrust + 200 > 0)
-			controlData.thrust += 200;//aumentar shift (en lo que te pinte)
-	}
-	else
-	{
-		putchar('d');
-		if (controlData.thrust - 200 > 0)
-			controlData.thrust -= 200;
-	}
-	//bajar shift*/
-}
-
-void batt_rx(u8 length)
-{
-	putchar('e');
-	start = _TRUE;
-}
-
-
 
 void main (void)
 {
@@ -204,37 +137,22 @@ void main (void)
 	u16 torqueCount = 0;
 
 	Init ();
-	DDRA_DDRA0 = 1;
-	DDRA_DDRA1 = 1;
-	DDRA_DDRA2 = 1;
-	PORTA_PA2 = 0;
-	DDRA_DDRA3 = 1;
-	PORTA_PA3 = 0;
-	DDRA_DDRA5 = DDR_OUT;
-	PORTA_PA5 = 0;
-	DDRA_DDRA6 = DDR_OUT;
-	PORTA_PA6 = 0;
 
+	nrf_Receive(nrf_Callback);
 	tim_GetTimer(TIM_IC, sample_ready, dataReady_Ovf, DMU_TIMER);
 	tim_SetRisingEdge(DMU_TIMER);
 	tim_ClearFlag(DMU_TIMER);
 	tim_EnableInterrupts(DMU_TIMER);
 
 
-
-// COMETNADO
-//	batt_AddBatt (ATD0, 0, lowBatt, BATT_MV_TO_LEVEL(3800), BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &batt1);
-//	batt_AddBatt (ATD0, 1, lowBatt, BATT_MV_TO_LEVEL(3800), BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &batt2);
-/*
-	rfrx_Register(C1_ID, c1_rx, &rx_data);
-	rfrx_Register(C2_ID, c2_rx, &rx_data);
-	rfrx_Register(SHIFT_ID, shift_rx, &rx_data);
-	rfrx_Register(BATT_ID, batt_rx, &rx_data);
-*/
+#ifdef MAIN_BATT
+	batt_AddBatt (ATD0, 0, lowBatt, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), NULL);
+	batt_AddBatt (ATD0, 1, lowBatt, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), NULL);
+#endif
 
 #ifdef MAIN_CALIBRATE
 
-	printf("Press 'm' to calibrate\n");
+	puts("Press 'm' to calibrate\n");
 
 	while (measurementCount < 2)
 	{
@@ -260,14 +178,14 @@ void main (void)
 		{	asm sei;
 			calibration.p0 = controlData.QEst;
 			asm cli;
-			printf("First measurement done\n");
+			puts("First measurement done\n");
 		}
 		else if (measurementCount == 1)
 		{
 			asm sei;
 			calibration.p1 = controlData.QEst;
 			asm cli;
-			printf("Second measurement done\n");
+			puts("Second measurement done\n");
 		}
 		measurementCount++;
 
@@ -280,7 +198,7 @@ void main (void)
 			if (calibrationOutput.quality == CAL_BAD)
 			{
 				measurementCount = 1;	// Stay looping second measurement.
-				printf("Calibrate again\n");
+				puts("Calibrate again\n");
 			}j
 
 			measurementCount = 1;
@@ -379,11 +297,15 @@ void main (void)
 			QEstAux = controlData.QEst;
 			asm cli;
 
-			//printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
+			printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
 			//printf("thrust: %d", controlData.thrust);
 
 		}
 	}
+
+#else 
+	while(1)
+		;
 
 #endif
 
@@ -392,14 +314,14 @@ void main (void)
 
 void rti_ThrustRamp(void *data, rti_time period, rti_id id)
 {
-	if (controlData.thrust == 0)
-		controlData.thrust = THRUST_INIT;
+	if (setpoint.thrust == 0)
+		setpoint.thrust = THRUST_INIT;
 
-	if ((controlData.thrust + THRUST_STEP) < THRUST_LIMIT)
-		controlData.thrust += THRUST_STEP;
+	if ((setpoint.thrust + THRUST_STEP) < THRUST_LIMIT)
+		setpoint.thrust += THRUST_STEP;
 	else
 	{
-		controlData.thrust = THRUST_LIMIT;
+		setpoint.thrust = THRUST_LIMIT;
 		rti_Cancel(id);
 	}
 
@@ -473,26 +395,61 @@ void measure (s32 measurement)
 	 usonic_Measure(measure);
 }
 */
+void nrf_Callback (u8 *data, u8 length)
+{
+	vec3 stick;
+	frac throttle;
+	efrac norm2;
+	quat newSetpoint;
+
+	switch (length)
+	{
+	case 4:
+		stick.x = data[2];	// roll
+		stick.y = data[1];	// pitch
+		stick.z = data[0];	// yaw
+
+		throttle = data[3]; // elev
+	
+		norm2 = f_to_extended(fmul(stick.x, stick.x)) + fmul(stick.y, stick.y) + fmul(stick.z, stick.z);
+		
+		if (norm2 > FRAC_1)
+			stick = evclip(vefdiv(stick, norm2));	// Se está dividiendo por un número mayor a 1, stick tiene que dar menor a lo que era.
+			
+		newSetpoint.r = fsqrt(FRAC_1 - norm2);
+		newSetpoint.v = stick;
+		
+		setpoint.attitude = newSetpoint;
+		setpoint.thrust = throttle;
+		
+		break;
+		
+	default:
+		break;
+	}
+}
+
 void Init (void)
 {
 	PLL_SPEED(BUS_CLOCK_MHZ);
 
  	// Modules that don't require interrupts to be enabled
+	qs_init(0, MON12X_BR);
 	tim_Init();
 	rti_Init();
-	qs_init(0, MON12X_BR);
+
 
  	asm cli;
 
  	// Modules that do require interrupts to be enabled
-	iic_Init();
 	dmu_Init();
-//	rfrx_Init();
-//	batt_Init();
-//	lcd_Init(LCD_2004);
+	nrf_Init(PRX);
 
+#ifdef MAIN_BATT
+	batt_Init();
+#endif
 
-	printf("Init done");
+	puts("Init done");
 
 	return;
 }

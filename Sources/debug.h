@@ -5,15 +5,16 @@
 
 //#define MAIN_CALIBRATE
 #define MAIN_CONTROL
-#define MAIN_SETPOINT
+//#define MAIN_SETPOINT
 //#define MAIN_OUTPUT
 
+#define MAIN_BATT
 
 
 // General keys
 
 //#define IIC_DEBUG
-#define DMU_DEBUG
+//#define DMU_DEBUG
 
 
 // Particular keys for IIC
