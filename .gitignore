@@ -9,8 +9,6 @@
 *.abs
 *.s19
 *.map
-*.mcp
-*.stg
 
 ############
 ## Monitor

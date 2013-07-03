@@ -6,9 +6,9 @@
 //#define MAIN_CALIBRATE
 #define MAIN_CONTROL
 //#define MAIN_SETPOINT
-//#define MAIN_OUTPUT
+#define MAIN_OUTPUT
 
-#define MAIN_BATT
+//#define MAIN_BATT
 
 
 // General keys
