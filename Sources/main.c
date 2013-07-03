@@ -26,9 +26,9 @@
 #define BATT_ID 3
 
 #define THRUST_STEP 200
-#define THRUST_LIMIT 10000
+#define THRUST_LIMIT 10500
 #define THRUST_INC_PERIOD_MS 300
-#define THRUST_INIT 5000
+#define THRUST_INIT 200
 
 #define UP 0xFF
 #define DOWN 0x00
@@ -82,10 +82,15 @@ void att_process(void)
 			//controlData.thrust = 6000;
 		}
 		
+		#ifdef MAIN_OUTPUT
+				
 		if (++ccount == 20) {
 			ccount = 0;
 			have_to_output = 1;
 		}
+		
+		#endif
+		
 	}
 	PORTA_PA0 = 0;
 }
@@ -314,7 +319,7 @@ void main (void)
 	while(!motDelayDone)
 		;
 
-	 rti_Register(rti_ThrustRamp, NULL, RTI_NOW, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS));
+	 rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
 	
 //	while (start == _FALSE)
 //		;
@@ -373,7 +378,9 @@ void main (void)
 			QEstAux = controlData.QEst;
 			asm cli;
 			
-			printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
+			//printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
+			//printf("thrust: %d", controlData.thrust);
+
 		}
 	}
 
@@ -386,11 +393,14 @@ void rti_ThrustRamp(void *data, rti_time period, rti_id id)
 	if (controlData.thrust == 0)
 		controlData.thrust = THRUST_INIT;
 	
-	if (controlData.thrust + THRUST_STEP < THRUST_LIMIT)
+	if ((controlData.thrust + THRUST_STEP) < THRUST_LIMIT)
 		controlData.thrust += THRUST_STEP;
 	else
+	{
+		controlData.thrust = THRUST_LIMIT;
 		rti_Cancel(id);
-
+	}
+	
 	return;	
 }
 

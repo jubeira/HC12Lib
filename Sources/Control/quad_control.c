@@ -19,13 +19,13 @@ controlData_T controlData = {{0,0,0,0}, {0, 0, 0}, {0,0,0}, 0};
 //#define prop_gain_int
 //#define prop_gain_divide 8000
 
-#define int_gain_divide 2000
+#define int_gain_divide 8000
 
 #define der_gain_int (1)
 //#define der_gain_frac 2000
 //#define der_gain_divide
 
-#define integral_error_limit 150
+#define integral_error_limit 250
 
 vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 {
@@ -47,7 +47,7 @@ vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 	integral_out_prev = integral_out;
 	error_sat_prev = error_sat;
 
-	integral_out.z = integral_out.y = integral_out.x = 0;
+	integral_out.z = 0;
 	
 
 	ctrl_signal = dvsum(
@@ -81,7 +81,7 @@ vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 	torques = evclip(ctrl_signal);
 	
 	// FIXME: esto esta mal, es para poder probar sin que moleste el yaw 
-	torques.z = 0;
+//	torques.z = 0;
 	return torques;
 }
 
@@ -103,7 +103,7 @@ frac h_control(frac setpoint, frac h)
 #define mix_thrust_shift 0
 #define	mix_roll_shift_r 0
 #define mix_pitch_shift_r 0
-#define mix_yaw_shift 3
+#define mix_yaw_shift 1
 
 frac gammainv(frac T, frac t1, frac t2, frac t3)
 {
