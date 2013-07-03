@@ -32,9 +32,11 @@
 
 #define UP 0xFF
 #define DOWN 0x00
+#include "nRF24L01+.h"
+#include <stdio.h>
 
 extern struct dmu_data_T dmu_data;
- 
+
 void Init (void);
 void PrintMeas (s32 measurement);
 void GetMeasurementsMask(void *data, rti_time period, rti_id id);
@@ -46,7 +48,7 @@ void fifoOvf_Srv(void);
 void icFcn(void);
 void rti_ThrustRamp(void *data, rti_time period, rti_id id);
 
- 
+
 struct tim_channelData dmu_timerData = {0,0};
 
 u16 overflowCnt = 0;
@@ -71,7 +73,7 @@ void att_process(void)
 
 	PORTA_PA0 = 1;
 	{
-		att_estim(dmu_measurements.gyro, dmu_measurements.accel, 
+		att_estim(dmu_measurements.gyro, dmu_measurements.accel,
 							&controlData.QEst, &controlData.bff_angle_rate);
 
 		// El control se corre sólo después de inicializar los motores, para que el control integral
@@ -81,27 +83,27 @@ void att_process(void)
 			controlData.torque = adv_att_control(setpoint, controlData.QEst, controlData.bff_angle_rate);
 			//controlData.thrust = 6000;
 		}
-		
+
 		#ifdef MAIN_OUTPUT
-				
+
 		if (++ccount == 20) {
 			ccount = 0;
 			have_to_output = 1;
 		}
-		
+
 		#endif
-		
+
 	}
 	PORTA_PA0 = 0;
 }
 
 void sample_ready(void)
-{	
-	if (tim_GetEdge(DMU_TIMER) == EDGE_RISING) 
+{
+	if (tim_GetEdge(DMU_TIMER) == EDGE_RISING)
 	{
 		tim_SetFallingEdge(DMU_TIMER);
 		dmu_GetMeasurements(att_process);
-		
+
 	} else {
 		tim_SetRisingEdge(DMU_TIMER);
 	}
@@ -149,19 +151,19 @@ void c2_rx(u8 length)
 	{
 		quat aux = {32488, -3024, 3024, 0};
 		setpoint = aux;
-		putchar('a');	
+		putchar('a');
 
 	}
 	if (rx_data == DOWN) //tocaron q
 	{
 		putchar('b');
 		motData.mode = MOT_MANUAL;
-		
+
 		motData.speed[0] = 0;
 		motData.speed[1] = 0;
 		motData.speed[2] = 0;
 		motData.speed[3] = 0;
-		
+
 //		while (1)
 //			;
 
@@ -174,13 +176,13 @@ void shift_rx(u8 length)
 	if (rx_data == UP)
 	{
 		putchar('c');
-		if (controlData.thrust + 200 > 0) 
+		if (controlData.thrust + 200 > 0)
 			controlData.thrust += 200;//aumentar shift (en lo que te pinte)
 	}
 	else
 	{
 		putchar('d');
-		if (controlData.thrust - 200 > 0) 
+		if (controlData.thrust - 200 > 0)
 			controlData.thrust -= 200;
 	}
 	//bajar shift*/
@@ -202,7 +204,7 @@ void main (void)
 
 	u16 torqueCount = 0;
 
-	Init ();	
+	Init ();
 	DDRA_DDRA0 = 1;
 	DDRA_DDRA1 = 1;
 	DDRA_DDRA2 = 1;
@@ -213,18 +215,18 @@ void main (void)
 	PORTA_PA5 = 0;
 	DDRA_DDRA6 = DDR_OUT;
 	PORTA_PA6 = 0;
-	
+
 	tim_GetTimer(TIM_IC, sample_ready, dataReady_Ovf, DMU_TIMER);
 	tim_SetRisingEdge(DMU_TIMER);
 	tim_ClearFlag(DMU_TIMER);
 	tim_EnableInterrupts(DMU_TIMER);
-	
-	
+
+
 
 // COMETNADO
 //	batt_AddBatt (ATD0, 0, lowBatt, BATT_MV_TO_LEVEL(3800), BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &batt1);
 //	batt_AddBatt (ATD0, 1, lowBatt, BATT_MV_TO_LEVEL(3800), BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &batt2);
-/*	
+/*
 	rfrx_Register(C1_ID, c1_rx, &rx_data);
 	rfrx_Register(C2_ID, c2_rx, &rx_data);
 	rfrx_Register(SHIFT_ID, shift_rx, &rx_data);
@@ -241,7 +243,7 @@ void main (void)
 		struct qpair calibration;
 
 		userInput = qs_getchar(0);
-		
+
 		if (userInput == 'c')
 		{
 			quat aux;
@@ -249,12 +251,12 @@ void main (void)
 			aux = controlData.QEst;
 			asm cli;
 			printf("Current quaternion: %d %d %d %d\n", Q_COMPONENTS(aux));
-			continue;		
+			continue;
 		}
-		
+
 		if (userInput != 'm')
 			continue;
-		
+
 		if (measurementCount == 0)
 		{	asm sei;
 			calibration.p0 = controlData.QEst;
@@ -269,19 +271,19 @@ void main (void)
 			printf("Second measurement done\n");
 		}
 		measurementCount++;
-		
+
 		if (measurementCount == 2)
 		{
-			calibrationOutput = att_calibrate(calibration.p0, calibration.p1);			
+			calibrationOutput = att_calibrate(calibration.p0, calibration.p1);
 			printf("Cal output: %d\n", calibrationOutput.quality);
 			printf("Correction: %d %d %d %d\n", Q_COMPONENTS(calibrationOutput.correction));
-			
+
 			if (calibrationOutput.quality == CAL_BAD)
 			{
 				measurementCount = 1;	// Stay looping second measurement.
 				printf("Calibrate again\n");
 			}j
-		
+
 			measurementCount = 1;
 			//att_apply_correction(calibrationOutput);
 		}
@@ -290,17 +292,17 @@ void main (void)
 #elif (defined MAIN_CONTROL)
 
 	mot_Init();
-			
+
 	rti_Register (rti_MotDelay, &motDelayDone, RTI_ONCE, RTI_MS_TO_TICKS(3000));
 
 	while(!motDelayDone)
 		;
-	
+
 	motData.speed[0] = S16_MAX;
 	motData.speed[1] = S16_MAX;
 	motData.speed[2] = S16_MAX;
 	motData.speed[3] = S16_MAX;
-	
+
 	motDelayDone = _FALSE;
 	rti_Register (rti_MotDelay, &motDelayDone, RTI_ONCE, RTI_MS_TO_TICKS(2000));
 
@@ -320,28 +322,28 @@ void main (void)
 		;
 
 	 rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
-	
+
 //	while (start == _FALSE)
 //		;
 
-	
+
 	motData.mode = MOT_AUTO;
 
-#endif 
+#endif
 
 #ifdef MAIN_SETPOINT
 
 	while (1) {
 		char input;
 		input = qs_getchar(0);
-			
+
 		if (input == 'a')
 		{
 			//quat aux = {32488, 3024, -3024, 0};
 			quat aux = {32488, -4277, 0, 0};
-			
+
 			setpoint = aux;
-		}			
+		}
 		else if (input == 's')
 		{
 			quat aux = UNIT_Q;
@@ -356,12 +358,12 @@ void main (void)
 		else if (input == 'q')
 		{
 			motData.mode = MOT_MANUAL;
-			
+
 			motData.speed[0] = 0;
 			motData.speed[1] = 0;
 			motData.speed[2] = 0;
 			motData.speed[3] = 0;
-			
+
 			while (1)
 				;
 		}
@@ -372,12 +374,12 @@ void main (void)
 	while(1) {
 		if (have_to_output) {
 			quat QEstAux;
-		
+
 			asm sei;
 			have_to_output = 0;
 			QEstAux = controlData.QEst;
 			asm cli;
-			
+
 			//printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
 			//printf("thrust: %d", controlData.thrust);
 
@@ -385,14 +387,12 @@ void main (void)
 	}
 
 #endif
-}
-
 
 void rti_ThrustRamp(void *data, rti_time period, rti_id id)
 {
 	if (controlData.thrust == 0)
 		controlData.thrust = THRUST_INIT;
-	
+
 	if ((controlData.thrust + THRUST_STEP) < THRUST_LIMIT)
 		controlData.thrust += THRUST_STEP;
 	else
@@ -400,14 +400,14 @@ void rti_ThrustRamp(void *data, rti_time period, rti_id id)
 		controlData.thrust = THRUST_LIMIT;
 		rti_Cancel(id);
 	}
-	
-	return;	
+
+	return;
 }
 
 void measure (s32 measurement);
 
 /*
-// MAIN de testeo para DMU. 
+// MAIN de testeo para DMU.
  void main (void)
  {
 	int a;
@@ -423,7 +423,7 @@ void measure (s32 measurement);
 
 	tim_GetTimer(TIM_IC, dataReady_Srv, NULL, DMU_TIMER);
 	tim_EnableInterrupts(DMU_TIMER);
-	tim_SetRisingEdge(DMU_TIMER); 
+	tim_SetRisingEdge(DMU_TIMER);
 
 
 //	mot_Init();
@@ -432,7 +432,7 @@ void measure (s32 measurement);
 //	tim_GetTimer(TIM_IC, fifoOvf_Srv, NULL, DMU_TIMER);
 
 //	tim_EnableInterrupts(DMU_TIMER);
-//	tim_SetRisingEdge(DMU_TIMER); 
+//	tim_SetRisingEdge(DMU_TIMER);
 
 //	rti_Register(GetSamplesMask, NULL, RTI_MS_TO_TICKS(500), RTI_MS_TO_TICKS(
 
@@ -457,7 +457,7 @@ void measure (s32 measurement);
 	 	}
 
  	}
- 		
+
 }
 */
 /*
@@ -467,7 +467,7 @@ void measure (s32 measurement)
 		printf("Distance: %ld cm.\n",measurement);
 	else
 		printf("Invalid measurement.\n");
-		
+
 	 usonic_Measure(measure);
 }
 */
@@ -477,11 +477,11 @@ void Init (void)
 
  	// Modules that don't require interrupts to be enabled
 	tim_Init();
-	rti_Init();	
+	rti_Init();
 	qs_init(0, MON12X_BR);
- 
+
  	asm cli;
- 
+
  	// Modules that do require interrupts to be enabled
 	iic_Init();
 	dmu_Init();
@@ -492,13 +492,12 @@ void Init (void)
 
 	printf("Init done");
 
-
 	return;
 }
 
 void GetMeasurementsMask(void *data, rti_time period, rti_id id)
 {
-	dmu_GetMeasurements(dmu_PrintFormattedMeasurements_WO);	
+	dmu_GetMeasurements(dmu_PrintFormattedMeasurements_WO);
 	return;
 }
 
@@ -534,7 +533,7 @@ void dataReady_Srv(void)
 			count = 0;
 		}
 	}
-	else 
+	else
 		tim_SetRisingEdge(DMU_TIMER);
 }
 
@@ -548,7 +547,7 @@ void dataReady_Ovf(void)
 
 void fifoOvf_Srv(void)
 {
-//	printf("fifo ovf!!!\n");	
+//	printf("fifo ovf!!!\n");
 
 
 	if (dmu_data.fifo.enable == _FALSE)
@@ -574,7 +573,7 @@ void icFcn()
 	lastEdge = tim_GetValue(2);
 	overflowCnt = 0;
  	count++;
- 
+
  	if (count == 10)
  	{
  		printf("t: %lu\n", time*TIM_TICK_NS);
