@@ -17,7 +17,6 @@
 #include "nRF24L01+.h"
 #include "batt.h"
 #include "lcd.h"
-#include "quad_rf.h"
 
 
 #define DMU_TIMER 1
@@ -154,8 +153,11 @@ void main (void)
 
 
 #ifdef MAIN_BATT
-	batt_AddBatt (ATD0, 0, batt_Callback, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &(batts[0]));
-	batt_AddBatt (ATD0, 1, batt_Callback, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &(batts[1]));
+	batt_AddBatt (ATD0, 0, NULL, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &(batts[0]));
+	batt_AddBatt (ATD0, 1, NULL, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &(batts[1]));
+
+	batt_CallOnSample (batt_Callback);
+
 #endif
 
 #ifdef MAIN_CALIBRATE
@@ -562,5 +564,5 @@ void icFcn()
  		count = 0;
  	}
  	return;
- }
+
 }
