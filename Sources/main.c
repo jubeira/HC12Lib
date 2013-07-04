@@ -17,6 +17,9 @@
 #include "nRF24L01+.h"
 #include "batt.h"
 #include "lcd.h"
+#include "quad_rf.h"
+
+
 #define DMU_TIMER 1
 #define C1_ID 0
 #define C2_ID 1
@@ -44,6 +47,8 @@ void fifoOvf_Srv(void);
 void icFcn(void);
 void rti_ThrustRamp(void *data, rti_time period, rti_id id);
 void nrf_Callback (u8 *data, u8 length);
+
+void Init (void);
 
 
 struct tim_channelData dmu_timerData = {0,0};
@@ -422,7 +427,7 @@ void nrf_Callback (u8 *data, u8 length)
 
 		throttle = data[3]; // elev
 		throttle *= 60;
-	
+			
 		norm2 = f_to_extended(fmul(stick.x, stick.x)) + fmul(stick.y, stick.y) + fmul(stick.z, stick.z);
 		
 		if (norm2 > FRAC_1)
@@ -456,12 +461,12 @@ void Init (void)
 	tim_Init();
 	rti_Init();
 
-
  	asm cli;
 
  	// Modules that do require interrupts to be enabled
 	dmu_Init();
 	nrf_Init(PRX);
+	// Modules that do require interrupts to be enabled
 
 #ifdef MAIN_BATT
 	batt_Init();
@@ -558,3 +563,4 @@ void icFcn()
  	}
  	return;
  }
+}
