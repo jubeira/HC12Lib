@@ -123,9 +123,12 @@ extern vec3 Bias;
 
 u8 start = _FALSE;
 
-void lowBatt(void)
+u8 batts[2];
+
+void batt_Callback(void)
 {
-	err_Throw("Low batt.\n");
+	nrf_StoreAckPayload(batts,2);
+	return;
 }
 
 void main (void)
@@ -146,8 +149,8 @@ void main (void)
 
 
 #ifdef MAIN_BATT
-	batt_AddBatt (ATD0, 0, lowBatt, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), NULL);
-	batt_AddBatt (ATD0, 1, lowBatt, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), NULL);
+	batt_AddBatt (ATD0, 0, batt_Callback, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &(batts[0]));
+	batt_AddBatt (ATD0, 1, batt_Callback, BATT_MV_TO_LEVEL(3600), BATT_MV_TO_LEVEL(4200), &(batts[1]));
 #endif
 
 #ifdef MAIN_CALIBRATE
@@ -215,9 +218,9 @@ void main (void)
 	while(!motDelayDone)
 		;
 
-	motData.speed[0] = S16_MAX;
+//	motData.speed[0] = S16_MAX;
 	motData.speed[1] = S16_MAX;
-	motData.speed[2] = S16_MAX;
+//	motData.speed[2] = S16_MAX;
 	motData.speed[3] = S16_MAX;
 
 	motDelayDone = _FALSE;
@@ -407,15 +410,18 @@ void nrf_Callback (u8 *data, u8 length)
 	{
 	case 4:
 		stick.x = (s8)data[2];	// roll
-		stick.y = (s8)data[1];	// pitch
-		stick.z = (s8)data[0];	// yaw
+
+		// Fixme
+		stick.y = 0;//(s8)data[1];	// pitch
+		stick.z = 0;//(s8)data[0];	// yaw
 
 		stick.x <<= 8;
-		stick.y <<= 8;
-		stick.z <<= 8;
+//		stick.y <<= 8;
+//		stick.z <<= 8;
 
 
 		throttle = data[3]; // elev
+		throttle *= 60;
 	
 		norm2 = f_to_extended(fmul(stick.x, stick.x)) + fmul(stick.y, stick.y) + fmul(stick.z, stick.z);
 		
