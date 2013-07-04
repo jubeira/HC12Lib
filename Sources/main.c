@@ -297,7 +297,8 @@ void main (void)
 			QEstAux = controlData.QEst;
 			asm cli;
 
-			printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
+			//printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
+			printf("%d %d %d %d,", Q_COMPONENTS(setpoint.attitude));
 			//printf("thrust: %d", controlData.thrust);
 
 		}
@@ -405,23 +406,34 @@ void nrf_Callback (u8 *data, u8 length)
 	switch (length)
 	{
 	case 4:
-		stick.x = data[2];	// roll
-		stick.y = data[1];	// pitch
-		stick.z = data[0];	// yaw
+		stick.x = (s8)data[2];	// roll
+		stick.y = (s8)data[1];	// pitch
+		stick.z = (s8)data[0];	// yaw
+
+		stick.x <<= 8;
+		stick.y <<= 8;
+		stick.z <<= 8;
+
 
 		throttle = data[3]; // elev
 	
 		norm2 = f_to_extended(fmul(stick.x, stick.x)) + fmul(stick.y, stick.y) + fmul(stick.z, stick.z);
 		
 		if (norm2 > FRAC_1)
-			stick = evclip(vefdiv(stick, norm2));	// Se está dividiendo por un número mayor a 1, stick tiene que dar menor a lo que era.
-			
-		newSetpoint.r = fsqrt(FRAC_1 - norm2);
+		{
+			stick = evclip(vefdiv(stick, fsqrt(norm2)));	// Se está dividiendo por un número mayor a 1, stick tiene que dar menor a lo que era.
+			newSetpoint.r = 0;
+		}	
+		else
+			newSetpoint.r = fsqrt(FRAC_1 - norm2);
+		
 		newSetpoint.v = stick;
 		
 		setpoint.attitude = newSetpoint;
 		setpoint.thrust = throttle;
-		
+
+		setpoint.attitude.v = stick;
+			
 		break;
 		
 	default:
