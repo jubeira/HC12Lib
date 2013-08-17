@@ -67,7 +67,7 @@ static dfrac fexpand(frac x)
 static efrac efdiv(frac dividend, efrac divisor)
 {
 	efrac result = f_to_extended(dividend);
-	result << (FRAC_BIT - 1);
+	result <<= (FRAC_BIT - 1);
 	
 	return result/divisor;
 
