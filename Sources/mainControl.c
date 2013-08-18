@@ -145,7 +145,7 @@ void main (void)
 
 	Init ();
 
-	nrf_Receive(nrf_Callback);
+//	nrf_Receive(nrf_Callback);
 	tim_GetTimer(TIM_IC, sample_ready, dataReady_Ovf, DMU_TIMER);
 	tim_SetRisingEdge(DMU_TIMER);
 	tim_ClearFlag(DMU_TIMER);
@@ -209,7 +209,7 @@ void main (void)
 			{
 				measurementCount = 1;	// Stay looping second measurement.
 				puts("Calibrate again\n");
-			}j
+			}
 
 			measurementCount = 1;
 			//att_apply_correction(calibrationOutput);
@@ -225,9 +225,9 @@ void main (void)
 	while(!motDelayDone)
 		;
 
-//	motData.speed[0] = S16_MAX;
+	motData.speed[0] = S16_MAX;
 	motData.speed[1] = S16_MAX;
-//	motData.speed[2] = S16_MAX;
+	motData.speed[2] = S16_MAX;
 	motData.speed[3] = S16_MAX;
 
 	motDelayDone = _FALSE;
@@ -247,6 +247,7 @@ void main (void)
 
 	while(!motDelayDone)
 		;
+
 
 	 rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
 
