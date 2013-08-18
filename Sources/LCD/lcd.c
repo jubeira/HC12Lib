@@ -39,12 +39,9 @@
 
 #define LCD_WRITE_DDRAM BIT(7)
 
-// Some displays work with a very short enable pulse. For those, these two lines are commented out.
-//#define LCD_ENABLE_NOPS 150
-//#define LCD_ENABLE_STROBE() do{u8 i;LCD_ENABLE = 1; for (i = 0; i < LCD_ENABLE_NOPS; i++) asm nop; LCD_ENABLE = 0;} while (0)
-
-// If a delay is required when strobing enable, comment out this line.
-#define LCD_ENABLE_STROBE() do{LCD_ENABLE = 1;LCD_ENABLE = 0;} while (0)
+// Some displays work with a very short enable pulse. For those, make LCD_ENABLE_NOPS lower
+#define LCD_ENABLE_NOPS 150
+#define LCD_ENABLE_STROBE() do{u8 i;LCD_ENABLE = 1;	for (i = 0; i < LCD_ENABLE_NOPS; i++) asm nop; LCD_ENABLE = 0;} while (0)
 
 #define LCD_SHORT_DELAY_US 200
 #define LCD_LONG_DELAY_US 3200
@@ -105,7 +102,7 @@ void lcd_Init(lcd_type type)
 
 void lcd_Print (char* string)
 {
-	u8 i = 0;	
+	u8 i = 0;
 
 	if (lcd_data.type == LCD_1602)
 	{
@@ -131,7 +128,7 @@ void lcd_Print (char* string)
 
 void lcd_PrintRow (char* string, u8 row)
 {
-	u8 i = 0;	
+	u8 i = 0;
 
 	if (lcd_data.type == LCD_1602)
 	{
@@ -195,6 +192,10 @@ void lcd_PrintCallback (void)
 	}
 	else if ((lcd_data.index == 80) && (lcd_data.type == LCD_2004))
 	{
+		LCD_RS = LCD_RS_INSTR;
+		LCD_DATA = (LCD_WRITE_DDRAM | 0x00);
+		LCD_ENABLE_STROBE();
+
 		lcd_data.index = 0;
 	}
 
