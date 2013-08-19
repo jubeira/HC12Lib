@@ -3,8 +3,8 @@
 
 // Main program
 
-//#define MAIN_CALIBRATE
-#define MAIN_CONTROL
+#define MAIN_CALIBRATE
+//#define MAIN_CONTROL
 //#define MAIN_SETPOINT
 //#define MAIN_OUTPUT
 
