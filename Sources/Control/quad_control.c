@@ -81,7 +81,7 @@ vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 	torques = evclip(ctrl_signal);
 	
 	// FIXME: esto esta mal, es para poder probar sin que moleste el yaw 
-//	torques.z = 0;
+	torques.z = 0;
 	return torques;
 }
 
@@ -125,12 +125,12 @@ void control_mixer(frac thrust, vec3 torque, struct motorData* output)
 {
 	frac hack;
 	
-//	output->speed[0] = gammainv(thrust, 0, torque.y, -torque.z);
+	output->speed[0] = gammainv(thrust, 0, torque.y, -torque.z);
 	
 	hack = gammainv(thrust, -torque.x, 0, torque.z);
 	output->speed[1] = dtrunc(fexpand(hack) + fmul2(hack, 5000));
-	
-//	output->speed[2] = gammainv(thrust, 0, -torque.y, -torque.z);
+
+	output->speed[2] = gammainv(thrust, 0, -torque.y, -torque.z);
 	output->speed[3] = gammainv(thrust, torque.x, 0, torque.z);
 	
 	return;

@@ -19,6 +19,8 @@
 #include "lcd.h"
 
 
+#define TRANSMITTER_INIT PTX
+
 #define DMU_TIMER 1
 #define C1_ID 0
 #define C2_ID 1
@@ -26,7 +28,7 @@
 #define BATT_ID 3
 
 #define THRUST_STEP 200
-#define THRUST_LIMIT 10500
+#define THRUST_LIMIT 7000
 #define THRUST_INC_PERIOD_MS 300
 #define THRUST_INIT 200
 
@@ -113,6 +115,18 @@ void sample_ready(void)
 	}
 }
 
+/* VAINA LOCA */
+
+u8 remote_data_arrived = 0;
+u8 remote_char;
+
+void nrf_copychar(u8 *data, u8 length)
+{
+	remote_data_arrived = 1;
+	remote_char = *data;
+}
+
+
 /* Main para control */
 
 #define Q_COMPONENTS(q) (q).r, (q).v.x, (q).v.y, (q).v.z
@@ -145,7 +159,8 @@ void main (void)
 
 	Init ();
 
-//	nrf_Receive(nrf_Callback);
+	// Ver que en init estè inicializado como RX!
+//	nrf_Receive(nrf_copychar);
 	tim_GetTimer(TIM_IC, sample_ready, dataReady_Ovf, DMU_TIMER);
 	tim_SetRisingEdge(DMU_TIMER);
 	tim_ClearFlag(DMU_TIMER);
@@ -248,13 +263,9 @@ void main (void)
 	while(!motDelayDone)
 		;
 
+	rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
 
-	 rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
-
-//	while (start == _FALSE)
-//		;
-
-
+	// vamos a auto si llega una p en setpoint comentando la línea siguiente y activando setp.
 	motData.mode = MOT_AUTO;
 
 #endif
@@ -263,25 +274,31 @@ void main (void)
 
 	while (1) {
 		char input;
-		input = qs_getchar(0);
+		//input = qs_getchar(0);
+		while (!remote_data_arrived)
+			;
+		asm sei
+		input = remote_char;
+		remote_data_arrived = 0;	
+		asm cli
 
 		if (input == 'a')
 		{
 			//quat aux = {32488, 3024, -3024, 0};
 			quat aux = {32488, -4277, 0, 0};
 
-			setpoint = aux;
+			setpoint.attitude = aux;
 		}
 		else if (input == 's')
 		{
 			quat aux = UNIT_Q;
-			setpoint = aux;
+			setpoint.attitude = aux;
 		}
 		else if (input == 'd')
 		{
 			//quat aux = {32488, -3024, 3024, 0};
 			quat aux = {32488, 4277, 0, 0};
-			setpoint = aux;
+			setpoint.attitude = aux;
 		}
 		else if (input == 'q')
 		{
@@ -294,6 +311,10 @@ void main (void)
 
 			while (1)
 				;
+		} 
+		else if (input == 'p')
+		{
+			motData.mode = MOT_AUTO;		
 		}
 	}
 
@@ -309,8 +330,9 @@ void main (void)
 			asm cli;
 
 			//printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
-			printf("%d %d %d %d,", Q_COMPONENTS(setpoint.attitude));
+			//printf("%d %d %d %d,", Q_COMPONENTS(setpoint.attitude));
 			//printf("thrust: %d", controlData.thrust);
+			nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), NULL);
 
 		}
 	}
@@ -340,121 +362,6 @@ void rti_ThrustRamp(void *data, rti_time period, rti_id id)
 	return;
 }
 
-void measure (s32 measurement);
-
-/*
-// MAIN de testeo para DMU.
- void main (void)
- {
-	int a;
-	char vel;
-
-	PLL_SPEED(BUS_CLOCK_MHZ);
-
-	Init ();
-
-//	DDRA = 0x01;
-
-
-
-	tim_GetTimer(TIM_IC, dataReady_Srv, NULL, DMU_TIMER);
-	tim_EnableInterrupts(DMU_TIMER);
-	tim_SetRisingEdge(DMU_TIMER);
-
-
-//	mot_Init();
-
-
-//	tim_GetTimer(TIM_IC, fifoOvf_Srv, NULL, DMU_TIMER);
-
-//	tim_EnableInterrupts(DMU_TIMER);
-//	tim_SetRisingEdge(DMU_TIMER);
-
-//	rti_Register(GetSamplesMask, NULL, RTI_MS_TO_TICKS(500), RTI_MS_TO_TICKS(
-
-//	rti_Register(GetMeasurementsMask, NULL, RTI_MS_TO_TICKS(500), RTI_MS_TO_TICKS(500));
-//	usonic_Measure(measure);
- 	while (1)
- 	{
- 		vel = qs_getchar(0);
-	 	if(vel == 'u')
-	 	{
-	 		motData.speed[0] += 300;
-	 		motData.speed[1] += 300;
-	 		motData.speed[2] += 300;
-	 		motData.speed[3] += 300;
-	 	}
-	 	else if(vel == 'd')
-	 	{
-	 		motData.speed[0] -= 300;
-	 		motData.speed[1] -= 300;
-	 		motData.speed[2] -= 300;
-	 		motData.speed[3] -= 300;
-	 	}
-
- 	}
-
-}
-*/
-/*
-void measure (s32 measurement)
-{
-	if (measurement != USONIC_INVALID_MEAS)
-		printf("Distance: %ld cm.\n",measurement);
-	else
-		printf("Invalid measurement.\n");
-
-	 usonic_Measure(measure);
-}
-*/
-void nrf_Callback (u8 *data, u8 length)
-{
-	vec3 stick;
-	frac throttle;
-	efrac norm2;
-	quat newSetpoint;
-
-	switch (length)
-	{
-	case 4:
-		stick.x = (s8)data[2];	// roll
-
-		// Fixme
-		stick.y = 0;//(s8)data[1];	// pitch
-		stick.z = 0;//(s8)data[0];	// yaw
-
-		stick.x <<= 8;
-//		stick.y <<= 8;
-//		stick.z <<= 8;
-
-
-		throttle = data[3]; // elev
-		throttle *= 60;
-			
-		norm2 = f_to_extended(fmul(stick.x, stick.x)) + fmul(stick.y, stick.y) + fmul(stick.z, stick.z);
-		
-		if (norm2 > FRAC_1)
-		{
-			stick = evclip(vefdiv(stick, fsqrt(norm2)));	// Se está dividiendo por un número mayor a 1, stick tiene que dar menor a lo que era.
-			newSetpoint.r = 0;
-		}	
-		else
-			newSetpoint.r = fsqrt(FRAC_1 - norm2);
-		
-		newSetpoint.v = stick;
-		
-		setpoint.attitude = newSetpoint;
-		setpoint.thrust = throttle;
-
-		setpoint.attitude.v = stick;
-			
-		break;
-		
-	default:
-		break;
-	}
-}
-
 void Init (void)
 {
 	PLL_SPEED(BUS_CLOCK_MHZ);
@@ -468,7 +375,7 @@ void Init (void)
 
  	// Modules that do require interrupts to be enabled
 	dmu_Init();
-	nrf_Init(PRX);
+	nrf_Init(TRANSMITTER_INIT);
 	// Modules that do require interrupts to be enabled
 
 #ifdef MAIN_BATT
