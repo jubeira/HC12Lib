@@ -5,10 +5,16 @@
 #include <stdio.h>
 #include "quad_control.h"
 
-#define MOTOR_SLAVE1_OC 6	// mot 4: timer 4
+#define MOTOR_SLAVE1_OC 6
 #define MOTOR_SLAVE2_OC 5
 #define MOTOR_SLAVE3_OC 4
 #define MOTOR_MASTER_OC 7
+
+#define _M1_ MOTOR_SLAVE3_OC
+#define _M2_ MOTOR_SLAVE1_OC
+#define _M3_ MOTOR_MASTER_OC
+#define _M4_ MOTOR_SLAVE2_OC
+
 
 #define MOT_PERIOD_MS 20
 #define MOT_DUTY_MIN_MS 1
@@ -47,10 +53,10 @@ void mot_Init(void)
 	tim_id timerId[4];
 	tim_Init();
 	
-	timerId[0] = tim_GetTimer(TIM_OC, mot_MasterSrv, NULL, MOTOR_MASTER_OC);
+	timerId[3] = tim_GetTimer(TIM_OC, mot_MasterSrv, NULL, MOTOR_MASTER_OC);
 	timerId[1] = tim_GetTimer(TIM_OC, mot_SlaveErr, NULL, MOTOR_SLAVE1_OC);	
-	timerId[2] = tim_GetTimer(TIM_OC, mot_SlaveErr, NULL, MOTOR_SLAVE2_OC);
-	timerId[3] = tim_GetTimer(TIM_OC, mot_SlaveErr, NULL, MOTOR_SLAVE3_OC);
+	timerId[0] = tim_GetTimer(TIM_OC, mot_SlaveErr, NULL, MOTOR_SLAVE2_OC);
+	timerId[2] = tim_GetTimer(TIM_OC, mot_SlaveErr, NULL, MOTOR_SLAVE3_OC);
 
 	if ((timerId[0] < 0) || (timerId[1] < 0) || (timerId[2] < 0) || (timerId[3] < 0))
 		err_Throw("Timers for motors already in use.");
@@ -81,10 +87,10 @@ void mot_MasterSrv(void)
 			control_mixer(controlData.thrust, controlData.torque, &motData);
 		}
 
-		tim_SetValue(MOTOR_MASTER_OC, latchedTime + fmul(motData.speed[0], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
-		tim_SetValue(MOTOR_SLAVE1_OC, latchedTime + fmul(motData.speed[1], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
-		tim_SetValue(MOTOR_SLAVE2_OC, latchedTime + fmul(motData.speed[2], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
-		tim_SetValue(MOTOR_SLAVE3_OC, latchedTime + fmul(motData.speed[3], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
+		tim_SetValue(_M1_, latchedTime + fmul(motData.speed[0], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
+		tim_SetValue(_M2_, latchedTime + fmul(motData.speed[1], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
+		tim_SetValue(_M3_, latchedTime + fmul(motData.speed[2], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
+		tim_SetValue(_M4_, latchedTime + fmul(motData.speed[3], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
 		 
 		mot_Unlink();
 		

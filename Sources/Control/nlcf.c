@@ -115,8 +115,9 @@ Estos valores le dan demasiada importancia al acelerometro
 
 #define OPT_INLINE /*nada */
 
+// Para calibrar, Q_Correction tiene que ser inicialmente UNIT_Q.
 //static quat Q_Correction = UNIT_Q;
-static quat Q_Correction = {318, {-23544, -22788, -285}};
+static quat Q_Correction = {440, {-11070, -30743, -2434}};
 
 static OPT_INLINE vec3 z_dir(quat q)
 {
