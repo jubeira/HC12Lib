@@ -36,6 +36,7 @@ struct dmu_data_T dmu_data = {_FALSE, NULL, 0, {_TRUE, 0, 0, 0, 0, NULL} };
 // Init by stages.
 void dmu_StagesInit(void);	
 // Comm failure message.
+void dmu_InitFailed(void);
 void dmu_CommFailed(void);
 // Print current measurement saved in global struct.
 void dmu_PrintFormattedMeasurements(void);
@@ -74,12 +75,14 @@ void dmu_AccumulateGlobalMeasurements(void);
 // Reg 116
 #define dmu_ReadNFifoBytes(_n, cb)	\
 	dmu_ReceiveFromRegister (ADD_FIFO_RW, cb, dmu_CommFailed, _n, NULL)
-
+#include "mc9s12xdp512.h"
 void dmu_Init()
 {
 	u16 offsetSampleRate;
 	rti_id offsetTask;
 	
+	DDRA_DDRA0 = DDR_OUT;
+	PORTA_PA0 = 0;
 	if (dmu_data.init == _TRUE)
 		return;
 	
@@ -135,7 +138,7 @@ void dmu_StagesInit()
 		iic_commData.data[0] = ADD_PWR_MGMT_1;
 		iic_commData.data[1] = 0;
 
-		dmu_Send (dmu_StagesInit, dmu_CommFailed, 2, NULL);
+		dmu_Send (dmu_StagesInit, dmu_InitFailed, 2, NULL);
 		
 		dmu_data.stage++;
 		
@@ -147,7 +150,7 @@ void dmu_StagesInit()
 		iic_commData.data[0] = ADD_PWR_MGMT_1;
 		iic_commData.data[1] = 0;
 
-		dmu_Send (dmu_StagesInit, dmu_CommFailed, 2, NULL);
+		dmu_Send (dmu_StagesInit, dmu_InitFailed, 2, NULL);
 		
 		dmu_data.stage++;
 		
@@ -169,7 +172,7 @@ void dmu_StagesInit()
 		iic_commData.data[10] = ZERO_MOTION_DURATION;
 		iic_commData.data[11] = FIFO_ENABLE;
 		
-		dmu_Send (dmu_StagesInit, dmu_CommFailed, 12, NULL);
+		dmu_Send (dmu_StagesInit, dmu_InitFailed, 12, NULL);
 		
 		dmu_data.stage++;
 		
@@ -182,7 +185,7 @@ void dmu_StagesInit()
 		iic_commData.data[2] = INT_ENABLE;
 
 		
-		dmu_Send(dmu_StagesInit, dmu_CommFailed, 3, NULL);
+		dmu_Send(dmu_StagesInit, dmu_InitFailed, 3, NULL);
 		
 		dmu_data.stage++;
 		
@@ -197,7 +200,7 @@ void dmu_StagesInit()
 		iic_commData.data[4] = PWR_MGMT_1_RUN;
 		// PWR_MGMT_2 stays in 0 (reset value).
 		
-		dmu_Send(dmu_StagesInit, dmu_CommFailed, 5, NULL);
+		dmu_Send(dmu_StagesInit, dmu_InitFailed, 5, NULL);
 
 		dmu_data.stage++;
 
@@ -208,7 +211,7 @@ void dmu_StagesInit()
 		iic_commData.data[0] = ADD_USER_CTRL;
 		iic_commData.data[1] = USER_CTRL_INIT;	// Run means not reset.
 		
-		dmu_Send(dmu_StagesInit, dmu_CommFailed, 2, NULL);
+		dmu_Send(dmu_StagesInit, dmu_InitFailed, 2, NULL);
 
 		dmu_data.stage++;
 
@@ -334,15 +337,26 @@ void dmu_printI2CData(void)
 	}
 }
 
-
-void dmu_CommFailed()
+void dmu_InitFailed()
 {
-//	printf("comm failed, stage %d\n", dmu_data.stage);
-	puts("comm failed, stage ");
+	
+	puts("Init failed, stage ");
 	putchar(dmu_data.stage + '0');
 	putchar('\n');
 
 	err_Throw("Dmu comm failure.");
+}
+
+
+void dmu_CommFailed()
+{
+	PORTA_PA0 = 1;
+
+	puts("comm failed, stage ");
+	putchar(iic_commData.transferParameters.stage + '0');
+	putchar('\n');
+
+//	err_Throw("Dmu comm failure.");
 }
 
 
