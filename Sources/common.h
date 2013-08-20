@@ -23,7 +23,7 @@ typedef char s8;
 
 
 #define U16_MAX ~0
-#define U16_MIN 0 
+#define U16_MIN 0
 #define S16_MAX INT16_MAX
 #define S16_MIN INT16_MIN
 typedef uint16_t u16;
@@ -40,7 +40,7 @@ typedef int32_t s32;
 
 
 #define U16_MAX ~0
-#define U16_MIN 0 
+#define U16_MIN 0
 #define S16_MAX ((s16)((((u16)1)<<15)-1))
 #define S16_MIN ((s16)(((u16)1)<<15))
 typedef unsigned int u16;
@@ -82,6 +82,9 @@ typedef union {
 #define NULL ((void*)0)
 #endif
 
+/* Array size */
+#define ARSIZE(a) ((sizeof(a))/(sizeof((a)[0])))
+
 #define DIV_CEIL(a,b) (((a) % (b) == 0) ? ((a)/(b)) : (((a)/(b))+1))
 
 #define PIN_LOW 0
@@ -105,6 +108,10 @@ extern u8 lastBitsMem[]; /* lastBitsMem[0] = 10000000, lastBitsMem[3] = 11110000
 #define GLUE_AGAIN2(a,b,c) a ## b ## c
 
 #define DDR_OUT 0xFF
+
+/* Error handling */
+
+#define E_OK 0
 
 /* Monitor IO */
 

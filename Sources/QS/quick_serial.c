@@ -45,7 +45,7 @@ void qs_init(int mod, u32 brate)
 	CR1(mod).M = 0;
 	CR1(mod).PE = 0;
 	
-	CR2_ALL(mod) = 0; /*esto deshabilita las interrupciones del sci*/
+	//CR2_ALL(mod) = 0; /*esto deshabilita las interrupciones del sci*/
 	CR2(mod).TE = 1;
 	CR2(mod).RE = 1;
 }

@@ -93,11 +93,14 @@ void att_process(void)
 
 		#ifdef MAIN_OUTPUT
 
-		if (++ccount == 20) {
+		if (++ccount == 50) {
 			ccount = 0;
 			have_to_output = 1;
 		}
 
+		#endif
+		#ifdef SEND_ATT_IN_PAYLOAD
+		nrf_StoreAckPayload ((u8*)&controlData.QEst, sizeof(controlData.QEst));
 		#endif
 
 	}
@@ -126,6 +129,10 @@ void nrf_copychar(u8 *data, u8 length)
 	remote_char = *data;
 }
 
+void *nrf_cb (bool success, u8 *ackPayload, u8 length)
+{
+	qs_putchar(0, success? 'o' : 'x');
+}
 
 /* Main para control */
 
@@ -323,7 +330,8 @@ void main (void)
 	while(1) {
 		if (have_to_output) {
 			quat QEstAux;
-
+			int k;
+			
 			asm sei;
 			have_to_output = 0;
 			QEstAux = controlData.QEst;
@@ -332,11 +340,29 @@ void main (void)
 			//printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
 			//printf("%d %d %d %d,", Q_COMPONENTS(setpoint.attitude));
 			//printf("thrust: %d", controlData.thrust);
-			nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), NULL);
+			k = nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), nrf_cb);
+			qs_putchar(0, '0'+k);
 
 		}
 	}
 
+#elif (defined MAIN_SENDMSG)
+	printf("%d\n", sizeof(quat));
+	while (1) {
+		quat QEstAux;
+		int k;
+
+		qs_getchar(0);
+		asm sei;
+		have_to_output = 0;
+		QEstAux = controlData.QEst;
+		asm cli;
+
+		k = nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), nrf_cb);
+		qs_putchar(0, k+'0');
+		k = nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), nrf_cb);
+		qs_putchar(0, k+'0');
+	}
 #else 
 	while(1)
 		;

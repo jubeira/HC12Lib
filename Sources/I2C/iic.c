@@ -2,6 +2,7 @@
 #include "mc9s12xdp512.h"
 #include "debug.h"
 #include "error.h"
+#include "quick_serial.h"
 
 #ifdef IIC_DEBUG
 #include <stdio.h>
@@ -179,11 +180,10 @@ void iic_FullStagesReceive (void)
 void interrupt iic0_Service (void)
 {
     IIC_FLG_CLEAR();
-  
+
     // Deteccion de eot
     if (iic_data.currCB == iic_data.eotCB)
     {
-
 	#ifdef IIC_DEBUG_EOT
 		putchar('e');putchar('o');putchar('t');putchar('\n');
 	#endif

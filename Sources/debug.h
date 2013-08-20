@@ -7,9 +7,12 @@
 //#define MAIN_CONTROL
 //#define MAIN_SETPOINT
 #define MAIN_OUTPUT
+//#define MAIN_SENDMSG
 
 //#define MAIN_BATT
 
+
+//#define SEND_ATT_IN_PAYLOAD
 
 // General keys
 
@@ -33,6 +36,13 @@
 
 #endif	// FIFO_DEBUG
 
+/* Debug messages */
+
+#ifdef DEBUG
+#define PUTS_WARNING(s) puts(s)
+#else
+#define PUTS_WARNING(s)
+#endif
 
 
 #endif	//_DEBUG_H_INCLUDED_
