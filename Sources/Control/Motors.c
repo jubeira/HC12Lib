@@ -10,10 +10,10 @@
 #define MOTOR_SLAVE3_OC 4
 #define MOTOR_MASTER_OC 7
 
-#define _M1_ MOTOR_SLAVE3_OC
+#define _M1_ MOTOR_SLAVE2_OC 
 #define _M2_ MOTOR_SLAVE1_OC
 #define _M3_ MOTOR_MASTER_OC
-#define _M4_ MOTOR_SLAVE2_OC
+#define _M4_ MOTOR_SLAVE3_OC
 
 
 #define MOT_PERIOD_MS 20

@@ -265,6 +265,7 @@ void main (void)
 
 	rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
 
+
 	// vamos a auto si llega una p en setpoint comentando la línea siguiente y activando setp.
 	motData.mode = MOT_AUTO;
 
