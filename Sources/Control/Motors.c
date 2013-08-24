@@ -5,12 +5,7 @@
 #include <stdio.h>
 #include "quad_control.h"
 
-#define MOTOR_SLAVE1_OC 6
-#define MOTOR_SLAVE2_OC 5
-#define MOTOR_SLAVE3_OC 4
-#define MOTOR_MASTER_OC 7
-
-#define _M1_ MOTOR_SLAVE2_OC 
+#define _M1_ MOTOR_SLAVE2_OC
 #define _M2_ MOTOR_SLAVE1_OC
 #define _M3_ MOTOR_MASTER_OC
 #define _M4_ MOTOR_SLAVE3_OC
@@ -48,19 +43,19 @@ bool readyToCalculate = _FALSE;
 #define mot_Unlink() tim7_UnlinkTimer(MOT_LINK_MASK)
 
 
-void mot_Init(void) 
+void mot_Init(void)
 {
 	tim_id timerId[4];
 	tim_Init();
-	
+
 	timerId[3] = tim_GetTimer(TIM_OC, mot_MasterSrv, NULL, MOTOR_MASTER_OC);
-	timerId[1] = tim_GetTimer(TIM_OC, mot_SlaveErr, NULL, MOTOR_SLAVE1_OC);	
+	timerId[1] = tim_GetTimer(TIM_OC, mot_SlaveErr, NULL, MOTOR_SLAVE1_OC);
 	timerId[0] = tim_GetTimer(TIM_OC, mot_SlaveErr, NULL, MOTOR_SLAVE2_OC);
 	timerId[2] = tim_GetTimer(TIM_OC, mot_SlaveErr, NULL, MOTOR_SLAVE3_OC);
 
 	if ((timerId[0] < 0) || (timerId[1] < 0) || (timerId[2] < 0) || (timerId[3] < 0))
 		err_Throw("Timers for motors already in use.");
-	
+
 	tim_SetOutputLow(MOTOR_SLAVE1_OC);
 	tim_SetOutputLow(MOTOR_SLAVE2_OC);
 	tim_SetOutputLow(MOTOR_SLAVE3_OC);
@@ -77,9 +72,9 @@ void mot_Init(void)
 void mot_MasterSrv(void)
 {
 	static u16 latchedTime;
-	
+
 	if (MOTOR_MASTER_PIN == PIN_HIGH)
-	{  
+	{
 		latchedTime = tim_GetValue(MOTOR_MASTER_OC);
 
 		if (motData.mode == MOT_AUTO)
@@ -91,9 +86,9 @@ void mot_MasterSrv(void)
 		tim_SetValue(_M2_, latchedTime + fmul(motData.speed[1], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
 		tim_SetValue(_M3_, latchedTime + fmul(motData.speed[2], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
 		tim_SetValue(_M4_, latchedTime + fmul(motData.speed[3], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
-		 
+
 		mot_Unlink();
-		
+
 		readyToCalculate = _TRUE;
 	}
 	else
@@ -101,11 +96,11 @@ void mot_MasterSrv(void)
 		tim_SetValue(MOTOR_MASTER_OC, latchedTime + TIM_US_TO_TICKS(1000*MOT_PERIOD_MS));
 		mot_Link();
 	}
-	
+
 	return;
 }
 
-void mot_SlaveErr(void) 
+void mot_SlaveErr(void)
 {
 	err_Throw("A slave motor has interrupted.");
 	return;

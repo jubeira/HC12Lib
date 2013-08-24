@@ -26,9 +26,10 @@ void main (void)
 
 	while (1) {
 		char input;
-//		input = qs_getchar(0);
+		input = qs_getchar(0);
 
 		//nrf_Transmit (&input, 1, nrf_TXCallback);
+        nrf_StoreAckPayload (&input, 1);
 
 	}
 }

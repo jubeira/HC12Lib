@@ -28,7 +28,7 @@
 #define BATT_ID 3
 
 #define THRUST_STEP 200
-#define THRUST_LIMIT 7000
+#define THRUST_LIMIT 5500
 #define THRUST_INC_PERIOD_MS 300
 #define THRUST_INIT 200
 
@@ -58,6 +58,8 @@ u16 overflowCnt = 0;
 u16 lastEdge = 0;
 
 extern void att_process(void);
+void main_HandleOutputs(void);
+
 extern bool have_to_output;
 
 extern bool readyToCalculate;
@@ -116,12 +118,16 @@ void sample_ready(void)
 }
 
 u8 remote_data_arrived = 0;
-u8 remote_char;
+u8 remote_char = '\0';
 
-void nrf_copychar(u8 *data, u8 length)
+
+void nrf_CheckPayload(bool success, u8 *ackPayload, u8 length)
 {
-	remote_data_arrived = 1;
-	remote_char = *data;
+    if (length == 1)
+    {
+        remote_data_arrived = 1;
+        remote_char = *ackPayload;
+    }
 }
 
 
@@ -261,21 +267,30 @@ void main (void)
 	while(!motDelayDone)
 		;
 
+	// vamos a auto si llega una p en setpoint comentando la línea siguiente y activando setp.	
+	#ifndef MAIN_SETPOINT
 	rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
-
-
-	// vamos a auto si llega una p en setpoint comentando la línea siguiente y activando setp.
 	motData.mode = MOT_AUTO;
+	#endif
+
 
 #endif
 
-#ifdef MAIN_SETPOINT
+#ifdef MAIN_SETPOINT 
 
 	while (1) {
 		char input;
 		//input = qs_getchar(0);
-		while (!remote_data_arrived)
-			;
+		
+		#ifdef MAIN_OUTPUT
+		
+			main_HandleOutputs();
+		
+		#endif
+		
+		if (!remote_data_arrived)
+			continue;
+		
 		asm sei
 		input = remote_char;
 		remote_data_arrived = 0;
@@ -284,7 +299,7 @@ void main (void)
 		if (input == 'a')
 		{
 			//quat aux = {32488, 3024, -3024, 0};
-			quat aux = {32488, -4277, 0, 0};
+			quat aux = {31991, -7092, 0, 0};	// 25 degrees
 
 			setpoint.attitude = aux;
 		}
@@ -296,7 +311,7 @@ void main (void)
 		else if (input == 'd')
 		{
 			//quat aux = {32488, -3024, 3024, 0};
-			quat aux = {32488, 4277, 0, 0};
+			quat aux = {31991, 7092, 0, 0};
 			setpoint.attitude = aux;
 		}
 		else if (input == 'q')
@@ -313,6 +328,7 @@ void main (void)
 		}
 		else if (input == 'p')
 		{
+			rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
 			motData.mode = MOT_AUTO;
 		}
 	}
@@ -320,20 +336,7 @@ void main (void)
 #elif (defined MAIN_OUTPUT)
 
 	while(1) {
-		if (have_to_output) {
-			quat QEstAux;
-
-			asm sei;
-			have_to_output = 0;
-			QEstAux = controlData.QEst;
-			asm cli;
-
-			//printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
-			//printf("%d %d %d %d,", Q_COMPONENTS(setpoint.attitude));
-			//printf("thrust: %d", controlData.thrust);
-			nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), NULL);
-
-		}
+		main_HandleOutputs();
 	}
 
 #else
@@ -386,6 +389,26 @@ void Init (void)
 
 	return;
 }
+
+
+void main_HandleOutputs(void)
+{
+	if (have_to_output) {
+		quat QEstAux;
+
+		asm sei;
+		have_to_output = 0;
+		QEstAux = controlData.QEst;
+		asm cli;
+
+		//printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
+		//printf("%d %d %d %d,", Q_COMPONENTS(setpoint.attitude));
+		//printf("thrust: %d", controlData.thrust);
+		nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), nrf_CheckPayload);
+
+	}
+}
+
 
 void GetMeasurementsMask(void *data, rti_time period, rti_id id)
 {
