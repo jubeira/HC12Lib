@@ -25,6 +25,8 @@ bin/mtee.exe
 Sources/main.c
 
 Codeblocks
+HC12Lib_Transmitter_Data
+HC12Lib_Control_Data
 
 ############
 ## Windows
