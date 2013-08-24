@@ -115,8 +115,6 @@ void sample_ready(void)
 	}
 }
 
-/* VAINA LOCA */
-
 u8 remote_data_arrived = 0;
 u8 remote_char;
 

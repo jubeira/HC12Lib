@@ -42,7 +42,7 @@
  *	machine_wmes = wmes / ACC_SCALE
  * wmes va sumado al gyro, por lo tanto:
  * 	v = omega + kp*wmes
- * 	machine_v = machine_omega + machine_wmes/WMES_DIV 
+ * 	machine_v = machine_omega + machine_wmes/WMES_DIV
  * 	machine_v = v / GYRO_SCALE = real_omega / GYRO_SCALE + kp*wmes / GYRO_SCALE
  *  =>
  * 	kp*wmes/GYRO_SCALE = kp*machine_wmes*ACC_SCALE/GYRO_SCALE = machine_wmes/ WMES_DIV
@@ -117,7 +117,7 @@ Estos valores le dan demasiada importancia al acelerometro
 
 // Para calibrar, Q_Correction tiene que ser inicialmente UNIT_Q.
 //static quat Q_Correction = UNIT_Q;
-static quat Q_Correction = {2, {-24163, 22098, 1273}};
+static quat Q_Correction = {1497, {32726, 558, 497}};
 
 static OPT_INLINE vec3 z_dir(quat q)
 {
@@ -142,6 +142,7 @@ static OPT_INLINE vec3 verror(vec3 y, vec3 x)
 
 	return zd;
 }
+
 //vec3 Bias;
 void att_estim(vec3 gyro, vec3 accel, quat *qest_out, vec3 *gyro_out)
 {
@@ -189,7 +190,7 @@ void att_estim(vec3 gyro, vec3 accel, quat *qest_out, vec3 *gyro_out)
 	/* la correccion de bias se estaba portando mal */
 	// p.v = vsum(vsum(gyro, vdiv(bias, BIAS_SCALE2)), vmul(wmes, WMES_MUL));
 	// p.v = vsub(vsum(gyro, vdiv(bias, BIAS_SCALE2)), vdiv(wmes, WMES_DIV));
-	
+
 	p.v = vsum(gyro, vdiv(wmes, WMES_DIV));
 //	p.v = vdiv(wmes, WMES_DIV);
 
@@ -209,22 +210,22 @@ void att_estim(vec3 gyro, vec3 accel, quat *qest_out, vec3 *gyro_out)
 }
 
 /* Calibración:
-	
+
 	p es la orientación del IMU con respecto al body:
 		X_body = p*X_imu*p'
 	q es la orientación del body con respecto la tierra:
 		X_earth = q*X_body*q'
-		
+
 	por lo tanto:
 		X_earth = q*p*X_imu*p'*q'
 		q*p = M (salida del estimador) => X_earth = M*X_imu*M'
 	para obtener q:
 		M*p' = q*p*p' = q (porque son cuaterniones unitarios)
-	
+
 	La otra manera es convertir las mediciones al marco de referencia
 	del vehículo:
 		w_body = p*w_imu*p'
-		
+
 */
 
 #define CAL_ITERATIONS 12
@@ -273,13 +274,13 @@ struct cal_output att_calibrate(quat mes0, quat mes1)
 	struct qpair p;
 	dfrac err;
 	struct cal_output r;
-	
+
 	p = _calibrate(mes0, mes1);
 	err = qmul2(p.p0, qconj(p.p1), 1).r;
-	
+
 	//r.correction = qconj(p.p0);
 	r.correction = p.p0;
-	
+
 	if (err > ERR_1DG)
 		r.quality = CAL_EXCELLENT;
 	else if (err > ERR_2DG)
@@ -288,7 +289,7 @@ struct cal_output att_calibrate(quat mes0, quat mes1)
 		r.quality = CAL_UGLY;
 	else
 		r.quality = CAL_BAD;
-	
+
 	return r;
 }
 
