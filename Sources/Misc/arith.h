@@ -68,7 +68,7 @@ static efrac efdiv(frac dividend, efrac divisor)
 {
 	efrac result = f_to_extended(dividend);
 	result <<= (FRAC_BIT - 1);
-	
+
 	return result/divisor;
 
 }
@@ -80,7 +80,7 @@ static frac efclip(efrac x)
 
 static frac frac_sat (frac x, frac sat)
 {
-	
+
 	return  (x > -sat)? ((x < sat)? x : sat) : -sat;
 }
 
@@ -217,7 +217,7 @@ static dvec3 dvec_Div(dvec3 a, s16 b)
 	dvec3 c = a;
 
 	dVec_DivInPlace(&c, b);
-	
+
 	return c;
 }
 
@@ -260,33 +260,33 @@ static vec3 vec_Mul(vec3 a, int f)
 static evec3 vefdiv(vec3 a, efrac divisor)
 {
 	evec3 r;
-	
+
 	r.x = efdiv(a.x, divisor);
 	r.y = efdiv(a.y, divisor);
 	r.z = efdiv(a.x, divisor);
-	
+
 	return r;
 }
 
 static vec3 vfmul(vec3 a, frac f)
 {
 	vec3 r;
-	
+
 	r.x = fmul(a.x, f);
 	r.y = fmul(a.y, f);
 	r.z = fmul(a.z, f);
-	
+
 	return r;
 }
 
 static dvec3 vfmul2(vec3 a, frac f)
 {
 	dvec3 r;
-	
+
 	r.x = fmul2(a.x, f);
 	r.y = fmul2(a.y, f);
 	r.z = fmul2(a.z, f);
-	
+
 	return r;
 }
 
@@ -312,7 +312,7 @@ static dvec3 dvec_rShift(dvec3 a, u8 shift)
 static evec3 vimul2(vec3 v, int a)
 {
 	evec3 r;
-	
+
 	r.x = v.x*a;
 	r.y = v.y*a;
 	r.z = v.z*a;
@@ -323,7 +323,7 @@ static evec3 vimul2(vec3 v, int a)
 static evec3 evimul(evec3 v, int a)
 {
 	evec3 r;
-	
+
 	r.x = v.x*a;
 	r.y = v.y*a;
 	r.z = v.z*a;
@@ -334,33 +334,33 @@ static evec3 evimul(evec3 v, int a)
 static vec3 evclip(evec3 v)
 {
 	vec3 r;
-	
+
 	r.x = efclip(v.x);
 	r.y = efclip(v.y);
 	r.z = efclip(v.z);
-	
+
 	return r;
 }
 
 static evec3 v_to_extended(vec3 v)
 {
 	evec3 r;
-	
+
 	r.x = v.x;
 	r.y = v.y;
 	r.z = v.z;
-	
+
 	return r;
 }
 
 static dvec3 vexpand(vec3 a)
 {
 	dvec3 r;
-	
+
 	r.x=fexpand(a.x);
 	r.y=fexpand(a.y);
 	r.z=fexpand(a.z);
-	
+
 	return r;
 }
 
@@ -393,8 +393,8 @@ static vec3 vsat (vec3 a, frac sat)
 	a.x = frac_sat (a.x, sat);
 	a.y = frac_sat (a.y, sat);
 	a.z = frac_sat (a.z, sat);
-	
-	return a;	
+
+	return a;
 }
 
 static vec3 vec_clip_d(dvec3 a)
@@ -404,7 +404,7 @@ static vec3 vec_clip_d(dvec3 a)
 	r.x = _DFRAC_CLIP(a.x);
 	r.y = _DFRAC_CLIP(a.y);
 	r.z = _DFRAC_CLIP(a.z);
-	
+
 	return r;
 }
 
@@ -544,7 +544,7 @@ static vec3 qrot(quat q, vec3 v)
 
 	_v.r = 0;
 	_v.v = v;
-	
+
 	return qmul(q, qmul(_v, qconj(q))).v;
 }
 
@@ -609,19 +609,21 @@ static quat qdecompose(quat q, u8 axis)
 
 /* Estas funciones dan el giro que hay que realizar para ir de
  * 'pos' hacia 'setp', en el marco de referencia de 'pos'
+ * Las funciones son intercambiables entre sí sin cambiar constantes,
+ * las "ganancias" son las mismas.
  */
 
 static vec3 qerror(quat setp, quat pos)
 {
 	quat c = qmul(qconj(pos), setp);
-	
+
 	return vfmul(c.v, c.r);
 }
 
 static vec3 qerror2(quat setp, quat pos)
 {
 	quat c = qmul(qconj(pos), setp);
-	
+
 	return vmul(c.v, SIGN(c.r));
 }
 

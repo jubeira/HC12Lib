@@ -389,7 +389,13 @@ void Init (void)
 	return;
 }
 
+#ifdef TRANSMIT_VEC3
+vec3 transmitData = {0,0,0};
+#elif (defined TRANSMIT_EVEC3)
 evec3 transmitData = {0,0,0};
+#elif (defined TRANSMIT_QUAT)
+quat transmitData = {0,{0,0,0}};
+#endif
 
 void main_HandleOutputs(void)
 {
@@ -406,7 +412,7 @@ void main_HandleOutputs(void)
 		//printf("thrust: %d", controlData.thrust);
 		#ifdef TRANSMIT_QUAT
 		nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), nrf_CheckPayload);
-		#elif (defined TRANSMIT_EVEC3)
+		#elif ((defined TRANSMIT_EVEC3) || (defined TRANSMIT_VEC3))
 		nrf_Transmit((u8*)(&transmitData), sizeof(transmitData), nrf_CheckPayload);
         #endif
 	}

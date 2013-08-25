@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include "motors.h"
 #include "timers.h"
+#include "rti.h"
 
 extern struct motorData motData;
 

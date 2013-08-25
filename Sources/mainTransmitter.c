@@ -72,6 +72,9 @@ void nrf_RXCallback(u8 *data, u8 length)
         case sizeof(evec3):
             printf("%ld %ld %ld,", VEC_COMPONENTS(*((evec3*)data)));
             break;
+    	case sizeof(vec3):
+            printf("%d %d %d,", VEC_COMPONENTS(*((evec3*)data)));
+			break;        
         default:
             break;
     }
