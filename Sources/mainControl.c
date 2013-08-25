@@ -101,7 +101,6 @@ void att_process(void)
 		}
 
 		#endif
-
 	}
 }
 
@@ -267,7 +266,7 @@ void main (void)
 	while(!motDelayDone)
 		;
 
-	// vamos a auto si llega una p en setpoint comentando la línea siguiente y activando setp.	
+	// vamos a auto si llega una p en setpoint comentando la línea siguiente y activando setp.
 	#ifndef MAIN_SETPOINT
 	rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
 	motData.mode = MOT_AUTO;
@@ -276,21 +275,21 @@ void main (void)
 
 #endif
 
-#ifdef MAIN_SETPOINT 
+#ifdef MAIN_SETPOINT
 
 	while (1) {
 		char input;
 		//input = qs_getchar(0);
-		
+
 		#ifdef MAIN_OUTPUT
-		
+
 			main_HandleOutputs();
-		
+
 		#endif
-		
+
 		if (!remote_data_arrived)
 			continue;
-		
+
 		asm sei
 		input = remote_char;
 		remote_data_arrived = 0;
@@ -390,6 +389,7 @@ void Init (void)
 	return;
 }
 
+evec3 transmitData = {0,0,0};
 
 void main_HandleOutputs(void)
 {
@@ -404,8 +404,11 @@ void main_HandleOutputs(void)
 		//printf("%d %d %d %d,", Q_COMPONENTS(QEstAux));
 		//printf("%d %d %d %d,", Q_COMPONENTS(setpoint.attitude));
 		//printf("thrust: %d", controlData.thrust);
+		#ifdef TRANSMIT_QUAT
 		nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), nrf_CheckPayload);
-
+		#elif (defined TRANSMIT_EVEC3)
+		nrf_Transmit((u8*)(&transmitData), sizeof(transmitData), nrf_CheckPayload);
+        #endif
 	}
 }
 

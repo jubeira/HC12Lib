@@ -8,6 +8,9 @@
 #define MAIN_SETPOINT
 #define MAIN_OUTPUT
 
+#define TRANSMIT_EVEC3
+//#define TRANSMIT_QUAT
+
 //#define MAIN_BATT
 
 

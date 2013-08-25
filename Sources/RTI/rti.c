@@ -89,6 +89,16 @@ void rti_Cancel(rti_id id)
 }
 
 
+void rti_Kill(void)
+{
+	int i;
+	for (i = 0; i < RTI_MAX_FCNS; i++)
+		rti_Cancel(i);
+	
+	return;
+}
+
+
 void interrupt rti_Service(void)
 {
 	rti_id i;

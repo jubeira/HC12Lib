@@ -13,7 +13,6 @@ void Init (void);
 void nrf_TXCallback(bool success, u8 *ackPayload, u8 length);
 void nrf_RXCallback(u8 *data, u8 length);
 
-
 void main (void)
 {
 	Init ();
@@ -28,9 +27,9 @@ void main (void)
 		char input;
 		input = qs_getchar(0);
 
-		//nrf_Transmit (&input, 1, nrf_TXCallback);
         nrf_StoreAckPayload (&input, 1);
 
+		//nrf_Transmit (&input, 1, nrf_TXCallback);
 	}
 }
 
@@ -46,6 +45,8 @@ void Init (void)
 	// Modules that do require interrupts to be enabled
 	//qrf_Init();
 	nrf_Init(PRX);
+	
+	printf("Init Done\n");
 
 	return;
 }
@@ -59,9 +60,19 @@ void nrf_TXCallback(bool success, u8 *ackPayload, u8 length)
 }
 
 #define Q_COMPONENTS(q) (q).r, (q).v.x, (q).v.y, (q).v.z
+#define VEC_COMPONENTS(v) (v).x, (v).y, (v).z
 
 void nrf_RXCallback(u8 *data, u8 length)
 {
-	printf("%d %d %d %d,", Q_COMPONENTS(*((quat*)data)));
-
+    switch(length)
+    {
+        case sizeof(quat):
+            printf("%d %d %d %d,", Q_COMPONENTS(*((quat*)data)));
+            break;
+        case sizeof(evec3):
+            printf("%ld %ld %ld,", VEC_COMPONENTS(*((evec3*)data)));
+            break;
+        default:
+            break;
+    }
 }

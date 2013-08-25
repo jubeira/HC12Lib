@@ -5,10 +5,21 @@
 #include <stdio.h>
 #include "quad_control.h"
 
+#define MOTOR_SLAVE1_OC 6
+#define MOTOR_SLAVE2_OC 5
+#define MOTOR_SLAVE3_OC 4
+#define MOTOR_MASTER_OC 7
+
+
 #define _M1_ MOTOR_SLAVE2_OC
 #define _M2_ MOTOR_SLAVE1_OC
 #define _M3_ MOTOR_MASTER_OC
 #define _M4_ MOTOR_SLAVE3_OC
+
+
+#define MOTORS_MASK ( (1<<MOTOR_MASTER_OC) | (1<<MOTOR_SLAVE1_OC) | (1<<MOTOR_SLAVE2_OC) | (1<<MOTOR_SLAVE3_OC))
+#define MOTORS_PORT PTT
+#define MOTORS_DDR DDRT
 
 
 #define MOT_PERIOD_MS 20
@@ -99,6 +110,21 @@ void mot_MasterSrv(void)
 
 	return;
 }
+
+
+#define TIMER_QUANTITY 8
+void mot_KillOtherTimers(void)
+{
+	int i;
+	for (i = 0; i < TIMER_QUANTITY; i++)
+	{
+		if ((MOTORS_MASK & (1<<i)) == 0)
+			tim_FreeTimer(i);
+	}
+	
+	return;
+}
+
 
 void mot_SlaveErr(void)
 {

@@ -12,18 +12,27 @@ void err_Throw(char* errMsg)
     asm sei;
     motData.mode = MOT_MANUAL;
 
-    tim_DisconnectOutput(MOTOR_MASTER_OC);
-    tim_DisconnectOutput(MOTOR_SLAVE1_OC);
-    tim_DisconnectOutput(MOTOR_SLAVE2_OC);
-    tim_DisconnectOutput(MOTOR_SLAVE3_OC);
+	motData.speed[0] = 0;
+	motData.speed[1] = 0;
+	motData.speed[2] = 0;
+	motData.speed[3] = 0;
+	
+	mot_KillOtherTimers();
+	rti_Kill();
 
-    MOTORS_DDR |= MOTORS_MASK;
-    MOTORS_PORT &= ~MOTORS_MASK;
+	asm cli;
 
 	puts(errMsg);
 
-	while (1)
-		;
+	while (1){
+	    
+	    motData.mode = MOT_MANUAL;
+		motData.speed[0] = 0;
+		motData.speed[1] = 0;
+		motData.speed[2] = 0;
+		motData.speed[3] = 0;
+		asm cli;
+	}
 
 	return;
 }
