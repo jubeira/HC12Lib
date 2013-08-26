@@ -11,21 +11,31 @@
 
 controlData_T controlData = {{0,0,0,0}, {0, 0, 0}, {0,0,0}, 0};
 
+/*
+********** Control de actitud *************
+ */
 
-#define ATT_DECIMATION_SIZE 4
-#define ATT_D_FILTER_SIZE 8
-
-#define prop_gain_frac 6500
-//#define prop_gain_int
-//#define prop_gain_divide 8000
-
+/* Integral */
 #define int_gain_divide 8000
-
-#define der_gain_int (1)
-//#define der_gain_frac 2000
-//#define der_gain_divide
-
 #define integral_error_limit 250
+
+/* Realimentación de posicion */
+#define prop_gain_frac_xy 6500
+#define prop_gain_frac_z 6500
+
+const vec3 PosGain = {prop_gain_frac_xy, prop_gain_frac_xy, prop_gain_frac_z};
+
+/* Realimentacion de velocidad */
+
+//#define der_gain_int_xy (1)
+//#define der_gain_int_z (1)
+//const ivec3 VelGain = {der_gain_int_xy, der_gain_int_xy, der_gain_int_z};
+
+#define der_gain_int_xy 256
+#define der_gain_int_z 280
+const vec3_q8_8 VelGain = {der_gain_int_xy, der_gain_int_xy, der_gain_int_z};
+
+/* * */
 
 #ifdef TRANSMIT_VEC3
 extern vec3 transmitData;
@@ -38,8 +48,6 @@ extern quat transmitData;
 vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 {
 	static quat att_prev = UNIT_Q;
-	static vec3 d_prev[ATT_D_FILTER_SIZE] = {VEC0};
-	static int d_prev_i = 0;
 	static vec3 error_sat_prev = VEC0;
 	static evec3 integral_out_prev = VEC0;
 
@@ -59,39 +67,21 @@ vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 
 	integral_out.z = 0;
 
-
-	ctrl_signal = dvsum(
-						dvsub(
-						#ifdef prop_gain_frac
-							v_to_extended(vfmul(error, prop_gain_frac)),
-						#elif (defined prop_gain_int)
-							vimul2(error, prop_gain_int),
-						#elif (defined prop_gain_divide)
-							v_to_extended(vdiv(error, prop_gain_divide)),
-						#else
-							#error "Define gain for proportional control."
-
-						#endif
-
-						#ifdef der_gain_frac
-						 	v_to_extended(vfmul(angle_rate, der_gain_frac))),
-						#elif (defined der_gain_int)
-						 	vimul2(angle_rate, der_gain_int)),
-						#elif (defined der_gain_divide)
-							v_to_extended(vdiv(angle_rate, der_gain_divide))),
-						#else
-							#error "Define gain for derivative control."
-						#endif
-
-					dvdiv(integral_out, int_gain_divide)
-					);
+	ctrl_signal = 	dvsum(
+				dvsub(
+					v_to_extended(vfmul_e2e(error, PosGain)),
+				 	//vimul2_e2e(angle_rate, VelGain)
+				 	vmul8_8(angle_rate, VelGain)
+				),
+				dvdiv(integral_out, int_gain_divide)
+			);
 
 	att_prev = att;
 
 	torques = evclip(ctrl_signal);
 
 	// FIXME: esto esta mal, es para poder probar sin que moleste el yaw
-	torques.z = 0;
+	//torques.z = 0;
 	return torques;
 }
 

@@ -294,27 +294,50 @@ void main (void)
 		input = remote_char;
 		remote_data_arrived = 0;
 		asm cli
-
-		if (input == 'a')
-		{
+		
+#define INCL_REAL 31651
+#define INCL_IMAG 5997
+		
+		switch (input) {
+		case 'a':
+			{
 			//quat aux = {32488, 3024, -3024, 0};
-			quat aux = {31991, -7092, 0, 0};	// 25 degrees
-
+			quat aux = {INCL_REAL, INCL_IMAG, -INCL_IMAG, 0};
 			setpoint.attitude = aux;
-		}
-		else if (input == 's')
-		{
+			break;
+			}
+		case 's':
+			{
 			quat aux = UNIT_Q;
 			setpoint.attitude = aux;
-		}
-		else if (input == 'd')
-		{
+			break;
+			}
+		case 'd':
+			{
 			//quat aux = {32488, -3024, 3024, 0};
-			quat aux = {31991, 7092, 0, 0};
+			quat aux = {INCL_REAL, -INCL_IMAG, INCL_IMAG, 0};
 			setpoint.attitude = aux;
-		}
-		else if (input == 'q')
-		{
+			break;
+			}
+		case 'w':
+			{
+			quat aux = {INCL_REAL, -INCL_IMAG, -INCL_IMAG, 0};
+			setpoint.attitude = aux;
+			break;
+			}
+		case 'x':
+			{
+			quat aux = {INCL_REAL, INCL_IMAG, INCL_IMAG, 0};
+			setpoint.attitude = aux;
+			break;
+			}
+		case 'f':
+			{
+			quat aux = {23170, 0, 0, 23170};
+			setpoint.attitude = aux;
+			break;
+			}
+		case 'q':
 			motData.mode = MOT_MANUAL;
 
 			motData.speed[0] = 0;
@@ -324,11 +347,16 @@ void main (void)
 
 			while (1)
 				;
-		}
-		else if (input == 'p')
-		{
+		case 'p':
 			rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
 			motData.mode = MOT_AUTO;
+			break;
+		default:
+			if (input >= '0' && input <= '9') {
+				int new_thrust = (input - '0')*777;
+				setpoint.thrust = new_thrust;
+			}
+			break;
 		}
 	}
 

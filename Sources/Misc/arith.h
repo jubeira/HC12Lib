@@ -416,6 +416,58 @@ static vec3 vec_clip_d(dvec3 a)
 #define dvsub dvec_Sub
 #define dvdiv dvec_Div
 
+/** cosas nuevas **/
+
+typedef s16 q8_8;
+
+#define Q8_8_1 (1<< 8)
+
+static efrac fmul_8_8(frac a, q8_8 b)
+{
+	return (((efrac)a) * b) >> 8;
+}
+
+static vec3 vfmul_e2e(vec3 a, vec3 b)
+{
+	vec3 r;
+	
+	r.x = fmul(a.x, b.x);
+	r.y = fmul(a.y, b.y);
+	r.z = fmul(a.z, b.z);
+	
+	return r;
+}
+
+typedef struct {
+	int x, y, z;
+} ivec3;
+
+static evec3 vimul2_e2e(vec3 v, ivec3 a)
+{
+	evec3 r;
+
+	r.x = v.x*a.x;
+	r.y = v.y*a.y;
+	r.z = v.z*a.z;
+
+	return r;
+}
+
+typedef struct {
+	q8_8 x, y, z;
+} vec3_q8_8;
+
+static evec3 vmul8_8(vec3 v, vec3_q8_8 a)
+{
+	evec3 r;
+
+	r.x = fmul_8_8(v.x, a.x);
+	r.y = fmul_8_8(v.y, a.y);
+	r.z = fmul_8_8(v.z, a.z);
+
+	return r;
+}
+
 /* **** Quaternions ****/
 
 typedef struct {
