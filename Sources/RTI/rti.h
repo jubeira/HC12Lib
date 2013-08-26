@@ -41,6 +41,9 @@ void rti_SetPeriod(rti_id id, rti_time period);
 void rti_Cancel(rti_id n); 
 // Cancels a registered rti_id
 
+void rti_Kill(void);
+// Cancels all tasks.
+
 extern void interrupt rti_Service(void); 
 // Interrupt function. To be registered in the IVT under rti.
 

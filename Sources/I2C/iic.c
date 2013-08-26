@@ -16,7 +16,7 @@
 
 #define IIC_MODULE_ENABLE() (IIC0_IBCR_IBEN = 1)
 // modify only IBC 6 - 7; refer to HC12 interfacing manual, page 545.
-#define IIC_SET_BAUD() (IIC0_IBFD = 0x5F)//(BUS_CLOCK_MHZ <= 24? (IIC0_IBFD = 0x45) : (IIC0_IBFD = 0x85)) //5f 100 kHz en SCL para 50 MHz, 1F 96k para 24 MHz
+#define IIC_SET_BAUD() (IIC0_IBFD = 0x1D)//(BUS_CLOCK_MHZ <= 24? (IIC0_IBFD = 0x45) : (IIC0_IBFD = 0x85)) //5f 100 kHz en SCL para 50 MHz, 1F 96k para 24 MHz
 #define IIC_FLG_CLEAR() (IIC0_IBSR_IBIF = 1)
 #define IIC_INTERRUPT_ENABLE() (IIC0_IBCR_IBIE = 1)
 
@@ -72,7 +72,7 @@ void iic_Send (u8 slvAddress, iic_ptr eotCB, iic_ptr commFailedCB, u8 toSend, u8
 		if (iic_data.stoppingBus)	// If the bus is busy but not because it is being stopped, it's a logical error.
 	    	while (iic_IsBusy()); 						// Wait until bus stop is complete
 	    else
-	    	err_Throw("iic: attempt to receive message (from register) while bus is busy.\n");
+	    	err_Throw("iic: attempt to send message while bus is busy.\n");
 	}
 	
 	iic_data.stoppingBus = _FALSE;     
@@ -102,7 +102,7 @@ void iic_Receive (u8 slvAddress, iic_ptr eotCB, iic_ptr commFailedCB, u8 toRead,
 		if (iic_data.stoppingBus)	// If the bus is busy but not because it is being stopped, it's a logical error.
 	    	while (iic_IsBusy()); 						// Wait until bus stop is complete
 	    else
-	    	err_Throw("iic: attempt to receive message (from register) while bus is busy.\n");
+	    	err_Throw("iic: attempt to receive message while bus is busy.\n");
 	}
 	
 	iic_data.stoppingBus = _FALSE;     
@@ -176,7 +176,7 @@ void iic_FullStagesReceive (void)
 }
 
 
-void interrupt iic0_srv (void)
+void interrupt iic0_Service (void)
 {
     IIC_FLG_CLEAR();
   

@@ -2,7 +2,12 @@
 
 #include "rti.h"
 #include "iic.h"
+#include "spi.h"
 #include "timers.h"
+#include "quick_serial.h"
+#include "atd.h"
+
+#include "nRF24L01+.h"
 
 #ifndef NOTUSED
 #define NOTUSED ((const *)0xFFFF)
@@ -13,9 +18,9 @@ extern void ISR_sci();
 
 #pragma CODE_SEG __NEAR_SEG NON_BANKED /* Interrupt section for this module. Placement will be in NON_BANKED area. */
 
-__interrupt void UnimplementedISR(void)  {                                                 
+__interrupt void UnimplementedISR(void)  {
    asm BGND; /* Unimplemented ISRs trap.*/
-}                                         
+}
 
 #pragma CONST_SEG VECTORS
 
@@ -108,7 +113,7 @@ void (* const interrupt_vector_table[])() ={
     NOTUSED,	// VECT34	eeprom
     NOTUSED,	// VECT33	spi2
     NOTUSED,	// VECT32	spi1
-    iic0_srv,	// VECT31	iic0
+    iic0_Service,	// VECT31	iic0
     NOTUSED,	// VECT30	Reserved30
     NOTUSED,	// VECT29	crgscm
     NOTUSED,	// VECT28	crgplllck
@@ -116,11 +121,11 @@ void (* const interrupt_vector_table[])() ={
     NOTUSED,	// VECT26	timmdcu
     NOTUSED,	// VECT25	porth
     NOTUSED,	// VECT24	portj
-    NOTUSED,	// VECT23	atd1
-    NOTUSED,	// VECT22	atd0
+    atd1_Service,	// VECT23	atd1
+    atd0_Service,	// VECT22	atd0
     NOTUSED,	// VECT21	sci1
     NOTUSED,	// VECT20	sci0
-    NOTUSED,	// VECT19	spi0
+    spi0_Service,	// VECT19	spi0
     NOTUSED,	// VECT18	timpaie
     NOTUSED,	// VECT17	timpaaovf
     timOvf_Service,	// VECT16	timovf
@@ -133,7 +138,7 @@ void (* const interrupt_vector_table[])() ={
     tim1_Service,	// VECT9	timch1
     tim0_Service,	// VECT8	timch0
     rti_Service,// VECT7	rti
-    NOTUSED,	// VECT6	irq
+    nrf_irq_Service,	// VECT6	irq
     NOTUSED,	// VECT5	xirq
     NOTUSED,	// VECT4	swi
     NOTUSED,	// VECT3	trap

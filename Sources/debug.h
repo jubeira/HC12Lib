@@ -1,11 +1,24 @@
 #ifndef _DEBUG_H_INCLUDED_
 #define _DEBUG_H_INCLUDED_
 
+// Main program
+
+//#define MAIN_CALIBRATE
+#define MAIN_CONTROL
+#define MAIN_SETPOINT
+#define MAIN_OUTPUT
+
+#define TRANSMIT_VEC3
+//#define TRANSMIT_EVEC3
+//#define TRANSMIT_QUAT
+
+//#define MAIN_BATT
+
 
 // General keys
 
 //#define IIC_DEBUG
-#define DMU_DEBUG
+//#define DMU_DEBUG
 
 
 // Particular keys for IIC
@@ -20,6 +33,7 @@
 //#define FIFO_DEBUG_COUNT
 #define DMU_DEBUG_OFFSET
 //#define FIFO_DEBUG_PRINT_AVG_SAMPLES
+//#define DMU_DEBUG_PRINT_ACCUMULATION
 
 #endif	// FIFO_DEBUG
 
