@@ -265,39 +265,39 @@ void main (void)
 		case 'a':
 			{
 			//quat aux = {32488, 3024, -3024, 0};
-			quat aux = {INCL_REAL, INCL_IMAG, -INCL_IMAG, 0};
-			setpoint.attitude = aux;
+			//quat aux = {INCL_REAL, INCL_IMAG, -INCL_IMAG, 0};
+			//setpoint.attitude = aux;
 			break;
 			}
 		case 's':
 			{
-			quat aux = UNIT_Q;
-			setpoint.attitude = aux;
+			//quat aux = UNIT_Q;
+			//setpoint.attitude = aux;
 			break;
 			}
 		case 'd':
 			{
 			//quat aux = {32488, -3024, 3024, 0};
-			quat aux = {INCL_REAL, -INCL_IMAG, INCL_IMAG, 0};
-			setpoint.attitude = aux;
+			//quat aux = {INCL_REAL, -INCL_IMAG, INCL_IMAG, 0};
+			//setpoint.attitude = aux;
 			break;
 			}
 		case 'w':
 			{
-			quat aux = {INCL_REAL, -INCL_IMAG, -INCL_IMAG, 0};
-			setpoint.attitude = aux;
+			//quat aux = {INCL_REAL, -INCL_IMAG, -INCL_IMAG, 0};
+			//setpoint.attitude = aux;
 			break;
 			}
 		case 'x':
 			{
-			quat aux = {INCL_REAL, INCL_IMAG, INCL_IMAG, 0};
-			setpoint.attitude = aux;
+			//quat aux = {INCL_REAL, INCL_IMAG, INCL_IMAG, 0};
+			//setpoint.attitude = aux;
 			break;
 			}
 		case 'f':
 			{
-			quat aux = {23170, 0, 0, 23170};
-			setpoint.attitude = aux;
+			//quat aux = {23170, 0, 0, 23170};
+			//setpoint.attitude = aux;
 			break;
 			}
 		case 'q':
@@ -307,16 +307,45 @@ void main (void)
 			motData.speed[1] = 0;
 			motData.speed[2] = 0;
 			motData.speed[3] = 0;
-
-			while (1)
-				;
-		case 'p':
-			rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
-			motData.mode = MOT_AUTO;
 			break;
+
+		case 'p':
+			//rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
+			motData.mode = MOT_AUTO;
+			setpoint.thrust = 3500;
+			break;
+			
+		case '.':
+			if (setpoint.thrust < 11900)
+				setpoint.thrust += 100;
+			else
+				setpoint.thrust = 12000;
+			break;
+			
+		case ',':
+			if (setpoint.thrust > 100)
+				setpoint.thrust -= 100;
+			else
+				setpoint.thrust = 0;
+			break;
+		
+		case 'l':
+			if (setpoint.thrust < 11750)
+				setpoint.thrust += 250;
+			else
+				setpoint.thrust = 12000;
+			break;
+		
+		case 'k':
+			if (setpoint.thrust > 250)
+				setpoint.thrust -= 250;
+			else
+				setpoint.thrust = 0;
+			break;
+			
 		default:
 			if (input >= '0' && input <= '9') {
-				int new_thrust = (input - '0')*777;
+				int new_thrust = (input - '0')*888;
 				setpoint.thrust = new_thrust;
 			}
 			break;
@@ -333,7 +362,6 @@ void main (void)
 
 	while(1)
 		;
-
 #endif
 
 }
