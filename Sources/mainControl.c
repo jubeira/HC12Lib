@@ -18,56 +18,23 @@
 #include "batt.h"
 #include "lcd.h"
 
-
+// Hardware settings
 #define TRANSMITTER_INIT PTX
-
 #define DMU_TIMER 1
 #define C1_ID 0
 #define C2_ID 1
 #define SHIFT_ID 2
 #define BATT_ID 3
 
+
+// Thrust-ramp settings
 #define THRUST_STEP 200
 #define THRUST_LIMIT 5500
 #define THRUST_INC_PERIOD_MS 300
 #define THRUST_INIT 200
 
-#define UP 0xFF
-#define DOWN 0x00
 
-extern struct dmu_data_T dmu_data;
-
-void Init (void);
-void PrintMeas (s32 measurement);
-void GetMeasurementsMask(void *data, rti_time period, rti_id id);
-void rti_MotDelay(void *data, rti_time period, rti_id id);
-void GetSamplesMask(void *data, rti_time period, rti_id id);
-void dataReady_Srv(void);
-void dataReady_Ovf(void);
-void fifoOvf_Srv(void);
-void icFcn(void);
-void rti_ThrustRamp(void *data, rti_time period, rti_id id);
-void nrf_Callback (u8 *data, u8 length);
-
-void Init (void);
-
-
-struct tim_channelData dmu_timerData = {0,0};
-
-u16 overflowCnt = 0;
-u16 lastEdge = 0;
-
-extern void att_process(void);
-void main_HandleOutputs(void);
-
-extern bool have_to_output;
-
-extern bool readyToCalculate;
-extern struct motorData motData;
-extern controlData_T controlData;
-
-bool have_to_output = 0;
-
+// Setpoint
 struct{
 
 	quat attitude;
@@ -75,7 +42,35 @@ struct{
 
 }setpoint = {UNIT_Q, 0};
 
+// Control start
+u8 start = _FALSE;
 
+// Extern data.
+extern struct motorData motData;
+extern controlData_T controlData;
+
+// Function definitions
+void Init (void);
+void att_process(void);
+void rti_MotDelay(void *data, rti_time period, rti_id id);
+void rti_ThrustRamp(void *data, rti_time period, rti_id id);
+void main_HandleOutputs(void);
+
+// Functions
+
+void sample_ready(void)
+{
+	if (tim_GetEdge(DMU_TIMER) == EDGE_RISING)
+	{
+		tim_SetFallingEdge(DMU_TIMER);
+		dmu_GetMeasurements(att_process);
+
+	} else {
+		tim_SetRisingEdge(DMU_TIMER);
+	}
+}
+
+bool have_to_output = 0;
 
 void att_process(void)
 {
@@ -104,21 +99,9 @@ void att_process(void)
 	}
 }
 
-void sample_ready(void)
-{
-	if (tim_GetEdge(DMU_TIMER) == EDGE_RISING)
-	{
-		tim_SetFallingEdge(DMU_TIMER);
-		dmu_GetMeasurements(att_process);
-
-	} else {
-		tim_SetRisingEdge(DMU_TIMER);
-	}
-}
 
 u8 remote_data_arrived = 0;
 u8 remote_char = '\0';
-
 
 void nrf_CheckPayload(bool success, u8 *ackPayload, u8 length)
 {
@@ -133,24 +116,6 @@ void nrf_CheckPayload(bool success, u8 *ackPayload, u8 length)
 /* Main para control */
 
 #define Q_COMPONENTS(q) (q).r, (q).v.x, (q).v.y, (q).v.z
-extern vec3 Bias;
-
-
-#define OC_PERIOD ((u8)62500)
-#define TIM4_DUTY 14000
-#define TIM5_DUTY 5000
-#define TIM6_DUTY 10000
-#define TIM7_DUTY 9375
-
-u8 start = _FALSE;
-
-u8 batts[2];
-
-void batt_Callback(void)
-{
-	nrf_StoreAckPayload(batts,2);
-	return;
-}
 
 void main (void)
 {
@@ -162,9 +127,7 @@ void main (void)
 
 	Init ();
 
-	// Ver que en init estè inicializado como RX!
-//	nrf_Receive(nrf_copychar);
-	tim_GetTimer(TIM_IC, sample_ready, dataReady_Ovf, DMU_TIMER);
+	tim_GetTimer(TIM_IC, sample_ready, NULL, DMU_TIMER);
 	tim_SetRisingEdge(DMU_TIMER);
 	tim_ClearFlag(DMU_TIMER);
 	tim_EnableInterrupts(DMU_TIMER);
@@ -360,7 +323,7 @@ void main (void)
 		}
 	}
 
-#elif (defined MAIN_OUTPUT)
+#elif (defined MAIN_OUTPUT) && !(defined MAIN_SETPOINT)
 
 	while(1) {
 		main_HandleOutputs();
@@ -406,6 +369,10 @@ void Init (void)
  	// Modules that do require interrupts to be enabled
 	dmu_Init();
 	nrf_Init(TRANSMITTER_INIT);
+
+	// Habilitar en caso de querer recibir setpoints, poner callback.
+//	nrf_Receive(nrf_copychar);
+
 	// Modules that do require interrupts to be enabled
 
 #ifdef MAIN_BATT
@@ -447,90 +414,16 @@ void main_HandleOutputs(void)
 }
 
 
-void GetMeasurementsMask(void *data, rti_time period, rti_id id)
-{
-	dmu_GetMeasurements(dmu_PrintFormattedMeasurements_WO);
-	return;
-}
-
-void GetSamplesMask(void *data, rti_time period, rti_id id)
-{
-	dmu_FifoAverage(NULL);
-	return;
-}
-
 void rti_MotDelay(void *data, rti_time period, rti_id id)
 {
 	*(bool*)data = _TRUE;
 	return;
 }
 
+u8 batts[2];
 
-void PrintMeas (s32 measurement)
+void batt_Callback(void)
 {
-	//printf("%ld\n", measurement);
-}
-
-
-void dataReady_Srv(void)
-{
-	static u16 count=0;
-
-	if (tim_GetEdge(DMU_TIMER) == EDGE_RISING)
-	{
-		tim_SetFallingEdge(DMU_TIMER);
-		if (++count == 100)
-		{
-			dmu_GetMeasurements(dmu_PrintFormattedMeasurements);
-			count = 0;
-		}
-	}
-	else
-		tim_SetRisingEdge(DMU_TIMER);
-}
-
-void dataReady_Ovf(void)
-{
-//	dmu_timerData.overflowCnt++;
-	overflowCnt++;
-
+	nrf_StoreAckPayload(batts,2);
 	return;
-}
-
-void fifoOvf_Srv(void)
-{
-//	printf("fifo ovf!!!\n");
-
-
-	if (dmu_data.fifo.enable == _FALSE)
-		return;
-
-	dmu_data.fifo.enable = _FALSE;
-	dmu_ReadFifo(NULL);
-
-//	dmu_FifoReset(NULL);
-
-	return;
-}
-
-
-
-void icFcn()
-{
-	static u16 count = 0;
-	u32 time;
-
-	time = tim_GetTimeElapsed(overflowCnt, 2, lastEdge);
-
-	lastEdge = tim_GetValue(2);
-	overflowCnt = 0;
- 	count++;
-
- 	if (count == 10)
- 	{
- 		printf("t: %lu\n", time*TIM_TICK_NS);
- 		count = 0;
- 	}
- 	return;
-
 }

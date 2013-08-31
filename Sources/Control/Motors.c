@@ -46,8 +46,6 @@ extern struct motorData control(void);
 extern controlData_T controlData;
 
 struct motorData motData = { MOT_MANUAL, {0,0,0,0} };
-bool readyToCalculate = _FALSE;
-
 
 // Macros to solve links in few assembly instructions.
 #define mot_Link() tim7_LinkTimer(MOT_LINK_MASK, MOT_LINK_MASK)
@@ -99,8 +97,6 @@ void mot_MasterSrv(void)
 		tim_SetValue(_M4_, latchedTime + fmul(motData.speed[3], MOT_SLOPE_TICKS) + MOT_CONSTANT_TERM_TICKS);
 
 		mot_Unlink();
-
-		readyToCalculate = _TRUE;
 	}
 	else
 	{
