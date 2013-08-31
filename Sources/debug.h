@@ -8,9 +8,10 @@
 #define MAIN_SETPOINT
 #define MAIN_OUTPUT
 
-#define TRANSMIT_VEC3
+//#define TRANSMIT_VEC3
 //#define TRANSMIT_EVEC3
 //#define TRANSMIT_QUAT
+#define TRANSMIT_SPAM
 
 //#define MAIN_BATT
 

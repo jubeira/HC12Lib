@@ -10,7 +10,7 @@
 #include "debug.h"
 
 controlData_T controlData = {{0,0,0,0}, {0, 0, 0}, {0,0,0}, 0};
-
+u8 int_Disable = 0;
 /*
 ********** Control de actitud *************
  */
@@ -58,10 +58,14 @@ vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 	vec3 error_sat = vsat(error, integral_error_limit);
 	evec3 integral_out;
 	
-	transmitData = error;
+	//transmitData = error;
 
-	integral_out = dvsum(dvsum(v_to_extended(error_sat_prev), v_to_extended(error_sat)), integral_out_prev);
-
+	if (int_Disable) {
+		evec3 v0 = VEC0;
+		integral_out = v0;
+	} else {
+		integral_out = dvsum(dvsum(v_to_extended(error_sat_prev), v_to_extended(error_sat)), integral_out_prev);
+	}
 	integral_out_prev = integral_out;
 	error_sat_prev = error_sat;
 
@@ -114,8 +118,8 @@ frac gammainv(frac T, frac t1, frac t2, frac t3)
 	r += (((dfrac)t2) >> mix_pitch_shift_r);
 	r += (((dfrac)t3) << mix_yaw_shift);
 
-	return fsqrt((r > 0)? ((r < FRAC_1)? r : FRAC_1) : 0);
-	//return ((r > 0)? ((r < FRAC_1)? r : FRAC_1) : 0);
+	//return fsqrt((r > 0)? ((r < FRAC_1)? r : FRAC_1) : 0);
+	return ((r > 0)? ((r < FRAC_1)? r : FRAC_1) : 0);
 }
 
 /* 0 y 2: brazo rojo; 1, 3: brazo negro
@@ -128,7 +132,7 @@ void control_mixer(frac thrust, vec3 torque, struct motorData* output)
 	output->speed[0] = gammainv(thrust, 0, torque.y, -torque.z);
 
 	hack = gammainv(thrust, -torque.x, 0, torque.z);
-	output->speed[1] = dtrunc(fexpand(hack) + fmul2(hack, 5000));
+	output->speed[1] = dtrunc(fexpand(hack) + fmul2(hack, 7000));
 
 	output->speed[2] = gammainv(thrust, 0, -torque.y, -torque.z);
 	output->speed[3] = gammainv(thrust, torque.x, 0, torque.z);

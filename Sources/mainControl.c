@@ -116,6 +116,7 @@ void nrf_CheckPayload(bool success, u8 *ackPayload, u8 length)
 /* Main para control */
 
 #define Q_COMPONENTS(q) (q).r, (q).v.x, (q).v.y, (q).v.z
+extern u8 int_Disable;
 
 void main (void)
 {
@@ -300,6 +301,11 @@ void main (void)
 			//setpoint.attitude = aux;
 			break;
 			}
+		case 'y':
+			int_Disable = 1;
+		case 'u':
+			int_Disable = 0;
+		case ' ':
 		case 'q':
 			motData.mode = MOT_MANUAL;
 
@@ -316,10 +322,10 @@ void main (void)
 			break;
 			
 		case '.':
-			if (setpoint.thrust < 11900)
+			if (setpoint.thrust < 25900)
 				setpoint.thrust += 100;
 			else
-				setpoint.thrust = 12000;
+				setpoint.thrust = 26000;
 			break;
 			
 		case ',':
@@ -330,10 +336,10 @@ void main (void)
 			break;
 		
 		case 'l':
-			if (setpoint.thrust < 11750)
+			if (setpoint.thrust < 25750)
 				setpoint.thrust += 250;
 			else
-				setpoint.thrust = 12000;
+				setpoint.thrust = 26000;
 			break;
 		
 		case 'k':
@@ -345,7 +351,7 @@ void main (void)
 			
 		default:
 			if (input >= '0' && input <= '9') {
-				int new_thrust = (input - '0')*888;
+				int new_thrust = (input - '0')*1500 + 6000;
 				setpoint.thrust = new_thrust;
 			}
 			break;
@@ -418,6 +424,8 @@ vec3 transmitData = {0,0,0};
 evec3 transmitData = {0,0,0};
 #elif (defined TRANSMIT_QUAT)
 quat transmitData = {0,{0,0,0}};
+#elif (defined TRANSMIT_SPAM)
+char transmitData = 'a';
 #endif
 
 void main_HandleOutputs(void)
@@ -435,9 +443,9 @@ void main_HandleOutputs(void)
 		//printf("thrust: %d", controlData.thrust);
 		#ifdef TRANSMIT_QUAT
 		nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), nrf_CheckPayload);
-		#elif ((defined TRANSMIT_EVEC3) || (defined TRANSMIT_VEC3))
+		#elif ((defined TRANSMIT_EVEC3) || (defined TRANSMIT_VEC3) || (defined TRANSMIT_SPAM))
 		nrf_Transmit((u8*)(&transmitData), sizeof(transmitData), nrf_CheckPayload);
-        #endif
+        	#endif
 	}
 }
 
