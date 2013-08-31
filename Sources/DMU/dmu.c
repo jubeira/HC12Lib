@@ -3,10 +3,10 @@
 #include "quick_serial.h"
 #include "debug.h"
 #include "rti.h"
-
+#include "error.h"
 
 #define MAX_BURST_READS 252
-#define INITIAL_AVERAGE 256
+#define INITIAL_AVERAGE 0
 
 
 #define PRINT_START 1
@@ -36,6 +36,7 @@ struct dmu_data_T dmu_data = {_FALSE, NULL, 0, {_TRUE, 0, 0, 0, 0, NULL} };
 // Init by stages.
 void dmu_StagesInit(void);	
 // Comm failure message.
+void dmu_InitFailed(void);
 void dmu_CommFailed(void);
 // Print current measurement saved in global struct.
 void dmu_PrintFormattedMeasurements(void);
@@ -74,12 +75,14 @@ void dmu_AccumulateGlobalMeasurements(void);
 // Reg 116
 #define dmu_ReadNFifoBytes(_n, cb)	\
 	dmu_ReceiveFromRegister (ADD_FIFO_RW, cb, dmu_CommFailed, _n, NULL)
-
+#include "mc9s12xdp512.h"
 void dmu_Init()
 {
 	u16 offsetSampleRate;
 	rti_id offsetTask;
 	
+	DDRA_DDRA0 = DDR_OUT;
+	PORTA_PA0 = 0;
 	if (dmu_data.init == _TRUE)
 		return;
 	
@@ -91,6 +94,8 @@ void dmu_Init()
 		;
 
 	// Offset elimination
+
+#if (INITIAL_AVERAGE != 0)
 
 	rti_Init();
 	
@@ -112,9 +117,12 @@ void dmu_Init()
 	dmu_CleanAccumulator(&dmu_sampleAccumulator);
 	
 	#ifdef DMU_DEBUG_OFFSET
-	printf("ox: %d, oy: %d, oz: %d\n", dmu_gyroOffset.x, dmu_gyroOffset.y, dmu_gyroOffset.z);
+//	printf("ox: %d, oy: %d, oz: %d\n", dmu_gyroOffset.x, dmu_gyroOffset.y, dmu_gyroOffset.z);
 	#endif
-
+	
+#endif
+	
+	return;
 	
 }
 
@@ -122,22 +130,35 @@ void dmu_Init()
 
 void dmu_StagesInit()
 {	
+
 	switch (dmu_data.stage)
 	{	
 	case 0:
-			
-		iic_commData.data[0] = ADD_PWR_MGMT_1;
-		iic_commData.data[1] = PWR_MGMT_1_RESET;
 
-		dmu_Send (dmu_StagesInit, dmu_CommFailed, 2, NULL);
+		iic_commData.data[0] = ADD_PWR_MGMT_1;
+		iic_commData.data[1] = 0;
+
+		dmu_Send (dmu_StagesInit, dmu_InitFailed, 2, NULL);
 		
 		dmu_data.stage++;
 		
 		break;
 
+
 	case 1:
+
+		iic_commData.data[0] = ADD_PWR_MGMT_1;
+		iic_commData.data[1] = 0;
+
+		dmu_Send (dmu_StagesInit, dmu_InitFailed, 2, NULL);
+		
+		dmu_data.stage++;
+		
+		break;
+		
+	case 2:
 		// Note: inserting delay / putchars here screws configuration up.	
-				
+	
 		iic_commData.data[0] = ADD_SAMPLE_RATE_DIVIDER;
 		iic_commData.data[1] = SAMPLE_RATE_DIVIDER;	// 25
 		iic_commData.data[2] = CONFIG;				// 26
@@ -151,26 +172,26 @@ void dmu_StagesInit()
 		iic_commData.data[10] = ZERO_MOTION_DURATION;
 		iic_commData.data[11] = FIFO_ENABLE;
 		
-		dmu_Send (dmu_StagesInit, dmu_CommFailed, 12, NULL);
+		dmu_Send (dmu_StagesInit, dmu_InitFailed, 12, NULL);
 		
 		dmu_data.stage++;
 		
 		break;
 	
-	case 2:
+	case 3:
 	
 		iic_commData.data[0] = ADD_INT_PIN_CFG;
 		iic_commData.data[1] = INT_PIN_CFG;		// 55
 		iic_commData.data[2] = INT_ENABLE;
 
 		
-		dmu_Send(dmu_StagesInit, dmu_CommFailed, 3, NULL);
+		dmu_Send(dmu_StagesInit, dmu_InitFailed, 3, NULL);
 		
 		dmu_data.stage++;
 		
 		break;
 		
-	case 3:
+	case 4:
 
 		iic_commData.data[0] = ADD_SIGNAL_PATH_RESET;
 		iic_commData.data[1] = RESET_SIGNAL(1,1,1);
@@ -179,25 +200,25 @@ void dmu_StagesInit()
 		iic_commData.data[4] = PWR_MGMT_1_RUN;
 		// PWR_MGMT_2 stays in 0 (reset value).
 		
-		dmu_Send(dmu_StagesInit, dmu_CommFailed, 5, NULL);
+		dmu_Send(dmu_StagesInit, dmu_InitFailed, 5, NULL);
 
 		dmu_data.stage++;
 
 		break;		
 
-	case 4:
+	case 5:
 
 		iic_commData.data[0] = ADD_USER_CTRL;
 		iic_commData.data[1] = USER_CTRL_INIT;	// Run means not reset.
 		
-		dmu_Send(dmu_StagesInit, dmu_CommFailed, 2, NULL);
+		dmu_Send(dmu_StagesInit, dmu_InitFailed, 2, NULL);
 
 		dmu_data.stage++;
 
 		break;		
 
 
-	case 5:
+	case 6:
 				
 		dmu_FifoReset(dmu_StagesInit);
 		dmu_data.stage++;
@@ -205,7 +226,7 @@ void dmu_StagesInit()
 		break;
 		
 
-	case 6:
+	case 7:
 				
 		dmu_data.init = _TRUE;
 		dmu_data.stage = 0;
@@ -228,7 +249,7 @@ void dmu_GetMeasurements(iic_ptr cb)
 void dmu_PrintFormattedMeasurements(void)
 {
 	struct dmu_measurements_T* dm = &dmu_measurements;
-	printf("ax: %d, ay: %d, az: %d\ngx: %d, gy: %d, gz: %d\n", dm->accel.x, dm->accel.y, dm->accel.z, dm->gyro.x, dm->gyro.y, dm->gyro.z);
+//	printf("ax: %d, ay: %d, az: %d\ngx: %d, gy: %d, gz: %d\n", dm->accel.x, dm->accel.y, dm->accel.z, dm->gyro.x, dm->gyro.y, dm->gyro.z);
 	return;
 }
 
@@ -237,7 +258,7 @@ void dmu_PrintFormattedMeasurements_WO(void)
 {
 	struct dmu_measurements_T* dm = &dmu_measurements;
 	struct dmu_gyroOffset_T* gOff = &dmu_gyroOffset;
-	printf("ax: %d, ay: %d, az: %d\ngx: %d, gy: %d, gz: %d\n", dm->accel.x, dm->accel.y, dm->accel.z, dm->gyro.x - gOff->x, dm->gyro.y - gOff->y, dm->gyro.z - gOff->z);
+//	printf("ax: %d, ay: %d, az: %d\ngx: %d, gy: %d, gz: %d\n", dm->accel.x, dm->accel.y, dm->accel.z, dm->gyro.x - gOff->x, dm->gyro.y - gOff->y, dm->gyro.z - gOff->z);
 	return;
 }
 
@@ -245,7 +266,7 @@ void dmu_PrintFormattedMeasurements_WO(void)
 void dmu_PrintRawMeasurements(void)
 {
 	struct dmu_measurements_T* dm = &dmu_measurements;
-	printf("%d %d %d %d %d %d, ", dm->accel.x, dm->accel.y, dm->accel.z, dm->gyro.x, dm->gyro.y, dm->gyro.z);
+//	printf("%d %d %d %d %d %d, ", dm->accel.x, dm->accel.y, dm->accel.z, dm->gyro.x, dm->gyro.y, dm->gyro.z);
 	return;
 }
 
@@ -254,7 +275,7 @@ void dmu_PrintRawMeasurements_WO(void)
 {
 	struct dmu_measurements_T* dm = &dmu_measurements;
 	struct dmu_gyroOffset_T* gOff = &dmu_gyroOffset;
-	printf("%d %d %d %d %d %d, ", dm->accel.x, dm->accel.y, dm->accel.z, dm->gyro.x - gOff->x, dm->gyro.y - gOff->y, dm->gyro.z - gOff->z);
+//	printf("%d %d %d %d %d %d, ", dm->accel.x, dm->accel.y, dm->accel.z, dm->gyro.x - gOff->x, dm->gyro.y - gOff->y, dm->gyro.z - gOff->z);
 	return;
 }
 
@@ -289,7 +310,7 @@ void dmu_FifoStageRead(void)
 		dmu_data.fifo.fetchTimes--;
 
 		#ifdef FIFO_DEBUG_COUNT
-		printf("fc: %d, ft: %d, rb: %d\n", dmu_data.fifo.count, dmu_data.fifo.fetchTimes, dmu_data.fifo.remainingBytes);
+//		printf("fc: %d, ft: %d, rb: %d\n", dmu_data.fifo.count, dmu_data.fifo.fetchTimes, dmu_data.fifo.remainingBytes);
 		#endif
 		
 		if ((dmu_data.fifo.fetchTimes < 0) && (dmu_data.fifo.remainingBytes != 0))
@@ -311,16 +332,31 @@ void dmu_printI2CData(void)
 	u16 i;
 	for (i = 0; i < PRINT_LENGTH; i++)
 	{
-		printf("%d %x\n", PRINT_START + i, iic_commData.data[i]);
+//		printf("%d %x\n", PRINT_START + i, iic_commData.data[i]);
 		iic_commData.data[i] = '\0';
 	}
+}
+
+void dmu_InitFailed()
+{
+	
+	puts("Init failed, stage ");
+	putchar(dmu_data.stage + '0');
+	putchar('\n');
+
+	err_Throw("Dmu comm failure.");
 }
 
 
 void dmu_CommFailed()
 {
-	printf("comm failed, stage %d\n", dmu_data.stage);
-	dmu_data.stage = 0;
+	PORTA_PA0 = 1;
+
+	puts("comm failed, stage ");
+	putchar(iic_commData.transferParameters.stage + '0');
+	putchar('\n');
+
+//	err_Throw("Dmu comm failure.");
 }
 
 
@@ -332,7 +368,7 @@ void dmu_PrintFifoMem(void)
 	
 	for (i = 0; i < limit; i++) 
 	{
-		printf("%d\t", (*(((u16*)iic_commData.data) + i) ) );
+//		printf("%d\t", (*(((u16*)iic_commData.data) + i) ) );
 	}
 		
 	dmu_ContinueFifoAction();		
@@ -346,7 +382,7 @@ void dmu_PrintFifoMem(void)
 
 void dmu_printFifoCnt(void)
 {
-	printf("fCnt: %d\n", (*(u16*)iic_commData.data));
+//	printf("fCnt: %d\n", (*(u16*)iic_commData.data));
 }
 
 
@@ -371,7 +407,7 @@ void dmu_AverageSamples(void)
 	for (dmuSamples += dmu_data.fifo.avgDiscard; (u8*)dmuSamples < (iic_commData.data + limit); dmuSamples++)
 	{
 		#ifdef FIFO_DEBUG_PRINT_AVG_SAMPLES
-		printf("ax: %d, ay: %d, az: %d\ngx: %d, gy: %d, gz: %d\n", dmuSamples->accel.x, dmuSamples->accel.y, dmuSamples->accel.z, dmuSamples->gyro.x, dmuSamples->gyro.y, dmuSamples->gyro.z);
+//		printf("ax: %d, ay: %d, az: %d\ngx: %d, gy: %d, gz: %d\n", dmuSamples->accel.x, dmuSamples->accel.y, dmuSamples->accel.z, dmuSamples->gyro.x, dmuSamples->gyro.y, dmuSamples->gyro.z);
 		#endif 
 		
 		dmu_AccumulateSamples(acc, dmuSamples);
@@ -449,7 +485,7 @@ void dmu_AccumulateGlobalMeasurements(void)
 {
 	dmu_AccumulateMeasurements(&dmu_sampleAccumulator, &dmu_measurements);
 	
-	#ifdef DMU_DEBUG_OFFSET
+	#ifdef DMU_DEBUG_PRINT_ACCUMULATION
 	dmu_PrintFormattedMeasurements();
 	#endif
 	
