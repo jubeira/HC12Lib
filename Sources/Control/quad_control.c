@@ -57,8 +57,9 @@ vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate)
 
 	vec3 error_sat = vsat(error, integral_error_limit);
 	evec3 integral_out;
-	
-	//transmitData = error;
+
+	transmitData.x = PosGain.x;
+	transmitData.y = VelGain.x;
 
 	if (int_Disable) {
 		evec3 v0 = VEC0;

@@ -8,14 +8,16 @@
 #define MAIN_SETPOINT
 #define MAIN_OUTPUT
 
-#define USING_FJOY
-#define FULL_FJOY
+//#define USING_FJOY
+//#define FULL_FJOY
 //#define THRUST_FJOY
 
-//#define TRANSMIT_VEC3
+#define TRANSMIT_VEC3
 //#define TRANSMIT_EVEC3
 //#define TRANSMIT_QUAT
-#define TRANSMIT_SPAM
+//#define TRANSMIT_SPAM
+
+#define RECEPTOR_TERMINATOR '\n'
 
 //#define MAIN_BATT
 

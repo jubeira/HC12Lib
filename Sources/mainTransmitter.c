@@ -32,12 +32,11 @@ void main (void)
 */
 //	nrf_Receive (nrf_RXCallback);
 
-	strcpy(lcd_memory, "putas");
-	while (1) {			
+	while (1) {
 	#ifndef USING_FJOY
 	#warning "not using fjoy"
 		char input = qs_getchar(0);
-		
+
 		nrf_StoreAckPayload (&input, sizeof(input));
 		//nrf_Transmit (&input, 1, nrf_TXCallback);
 	#endif
@@ -86,17 +85,20 @@ void nrf_RXCallback(u8 *data, u8 length)
     switch(length)
     {
         case sizeof(quat):
-            printf("%d %d %d %d,", Q_COMPONENTS(*((quat*)data)));
+            printf("%d %d %d %d", Q_COMPONENTS(*((quat*)data)));
             break;
         case sizeof(evec3):
-            printf("%ld %ld %ld,", VEC_COMPONENTS(*((evec3*)data)));
+            printf("%ld %ld %ld", VEC_COMPONENTS(*((evec3*)data)));
             break;
     	case sizeof(vec3):
-            printf("%d %d %d,", VEC_COMPONENTS(*((evec3*)data)));
-			break;        
+            printf("%d %d %d", VEC_COMPONENTS(*((evec3*)data)));
+			break;
         default:
             break;
     }
+
+    putchar(RECEPTOR_TERMINATOR);
+    return;
 }
 
 
@@ -107,9 +109,9 @@ void fjoy_Callback(void)
 
 	if (input == QS_NODATA)
 		transmitData.input = '\0';
-	else 
-		transmitData.input = (char)input;		
-	
+	else
+		transmitData.input = (char)input;
+
 	interruptStatus = SafeSei();
 
 	transmitData.yaw = fjoy_status.yaw;
@@ -118,7 +120,7 @@ void fjoy_Callback(void)
 	transmitData.elev = fjoy_status.elev;
 
 	SafeCli(interruptStatus);
-	
+
 	nrf_StoreAckPayload (&transmitData, sizeof(transmitData));
 
 	memset(lcd_memory, ' ' , LCD_MEMORY/4);
