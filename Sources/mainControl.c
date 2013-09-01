@@ -333,12 +333,14 @@ void main (void)
 			motData.speed[2] = 0;
 			motData.speed[3] = 0;
 			break;
-
+	
+	#ifdef MAIN_CONTROL	// Play only if using control.
 		case 'p':
 			//rti_Register(rti_ThrustRamp, NULL, RTI_MS_TO_TICKS(THRUST_INC_PERIOD_MS), RTI_NOW);
 			motData.mode = MOT_AUTO;
 			setpoint.thrust = 3500;
 			break;
+	#endif
 			
 		case '.':
 			if (setpoint.thrust < 25900)
