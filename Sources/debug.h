@@ -9,6 +9,8 @@
 #define MAIN_OUTPUT
 
 #define USING_FJOY
+#define FULL_FJOY
+//#define THRUST_FJOY
 
 //#define TRANSMIT_VEC3
 //#define TRANSMIT_EVEC3

@@ -36,12 +36,7 @@
 
 
 // Setpoint
-struct{
-
-	quat attitude;
-	frac thrust;
-
-}setpoint = {UNIT_Q, 0};
+setpoint_T setpoint = {UNIT_Q, 0};
 
 // Control start
 u8 start = _FALSE;
@@ -381,8 +376,12 @@ void main (void)
 	#ifdef USING_FJOY
 	// Joystick code here
 		{
+	#ifdef FULL_FJOY
+		setpoint = comm_FjoyToSetpoint(&receiveDataCopy);
+	#elif (defined (THRUST_FJOY)
 		u8 elev = receiveDataCopy.elev;
 		setpoint.thrust = comm_ProcessElev(elev);
+	#endif
 		}
 		
 	#endif

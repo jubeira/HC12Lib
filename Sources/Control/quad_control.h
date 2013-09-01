@@ -12,6 +12,13 @@ typedef struct
 	frac thrust;
 }controlData_T;
 
+typedef struct{
+
+	quat attitude;
+	frac thrust;
+
+}setpoint_T;
+
 
 vec3 adv_att_control(quat setpoint, quat att, vec3 angle_rate);
 frac h_control(frac setpoint, frac h);

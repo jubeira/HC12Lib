@@ -66,7 +66,18 @@ enum {LENGTH_2=0, LENGTH_4, LENGTH_8, LENGTH_16};
 
 // setTask transfers task ownership to user
 atd_taskId atd_SetTask(atd_module module, u8 channel, u8 length, bool mult, bool scan, atd_ptr eocCB);
+// Uses module to perform task.
+// @param channel: specify pin inside module
+// @param length: specifies how many conversions to make per task
+// @param mult: multiplex channels if true --> the first conversion is "channel", and the last one is channel+length.
+// @param scan: keep repeating task if true, do only once if false.
+// @param eocCB: end of conversion callback, to be called when task conversion is finished.
+// Callback receives reference to conversion data, and reference to conversion metadata (task description)
+// If scan is true, the callback is called after each conversion.
+
 void atd_FreeTask(atd_module module, atd_taskId id);
+// Terminates task "id" in "module".
+
 
 // Possible interface
 

@@ -17,3 +17,33 @@ frac comm_ProcessElev(u8 elev)
 	
 	return thrust;
 }
+
+
+setpoint_T comm_FjoyToSetpoint(const commandData_T* data)
+{
+	vec3 stick;
+	frac throttle;
+	efrac norm2;
+	setpoint_T newSetpoint;
+
+	stick.x = ((s16)data->roll) << 8;	// roll
+	stick.y = ((s16)data->pitch) << 8;	// pitch
+	stick.z = ((s16)data->yaw) << 8;	// yaw
+
+	throttle = data->elev; // elev
+
+	norm2 = f_to_extended(fmul(stick.x, stick.x)) + fmul(stick.y, stick.y) + fmul(stick.z, stick.z);
+
+	if (norm2 > FRAC_1)
+	{
+		stick = evclip(vefdiv(stick, fsqrt(norm2)));	// Se está dividiendo por un número mayor a 1, stick tiene que dar menor a lo que era.
+		newSetpoint.attitude.r = 0;
+	}	
+	else
+		newSetpoint.attitude.r = fsqrt(FRAC_1 - norm2);
+
+	newSetpoint.attitude.v = stick;
+	newSetpoint.thrust = comm_ProcessElev(throttle);
+
+	return newSetpoint;
+}
