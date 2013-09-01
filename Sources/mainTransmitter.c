@@ -31,7 +31,7 @@ void main (void)
 */
 	nrf_Receive (nrf_RXCallback);
 
-
+	strcpy(lcd_memory, "putas");
 	while (1) {			
 	#ifndef USING_FJOY
 		char input = qs_getchar(0);
@@ -57,7 +57,7 @@ void Init (void)
 
 #ifdef USING_FJOY
 	fjoy_Init();
-	fjoy_CallOnUpdate(fjoy_Callback);
+//	fjoy_CallOnUpdate(fjoy_Callback);
 	lcd_Init(LCD_2004);
 #endif
 	
@@ -117,6 +117,6 @@ void fjoy_Callback(void)
 	
 	nrf_StoreAckPayload (&transmitData, sizeof(transmitData));
 
-	memset(lcd_memory, ' ', LCD_MEMORY);
-	sprintf(lcd_memory, "%d", (int)comm_ProcessElev(transmitData.elev));
+//	memset(lcd_memory, '*' , LCD_MEMORY);
+//	sprintf(lcd_memory, "%d", (int)comm_ProcessElev(transmitData.elev));
 }
