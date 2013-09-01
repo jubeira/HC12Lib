@@ -11,6 +11,8 @@
 #define BRATE_NO_CHANGE 0
 #define MON12X_BR 115200
 
+#define QS_NODATA -1
+
 enum {QS_LOOP_NONE, QS_LOOP_INT, QS_LOOP_EXT};
 
 void qs_init(int mod, u32 brate);
@@ -26,5 +28,8 @@ char qs_rx(int mod);
 char qs_getchar(int mod);
 
 void qs_write(int mod, char *buf, unsigned int len);
+
+int qs_poll_rx(int mod);
+
 
 #endif /* __QS_H__ */

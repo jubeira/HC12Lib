@@ -5,13 +5,22 @@
 #include "quad_rf.h"
 #include "nRF24L01+.h"
 #include "arith.h"
+#include "fjoy.h"
+#include "command_data.h"
+#include "lcd.h"
 
 #include <stdio.h>
+
+extern struct fjoy_status;
+
+commandData_T transmitData;
 
 void Init (void);
 
 void nrf_TXCallback(bool success, u8 *ackPayload, u8 length);
 void nrf_RXCallback(u8 *data, u8 length);
+void fjoy_Callback(void);
+
 
 void main (void)
 {
@@ -23,13 +32,13 @@ void main (void)
 	nrf_Receive (nrf_RXCallback);
 
 
-	while (1) {
-		char input;
-		input = qs_getchar(0);
-
-        nrf_StoreAckPayload (&input, 1);
-
+	while (1) {			
+	#ifndef USING_FJOY
+		char input = qs_getchar(0);
+		
+		nrf_StoreAckPayload (&input, sizeof(input));
 		//nrf_Transmit (&input, 1, nrf_TXCallback);
+	#endif
 	}
 }
 
@@ -45,6 +54,12 @@ void Init (void)
 	// Modules that do require interrupts to be enabled
 	//qrf_Init();
 	nrf_Init(PRX);
+
+#ifdef USING_FJOY
+	fjoy_Init();
+	fjoy_CallOnUpdate(fjoy_Callback);
+	lcd_Init(LCD_2004);
+#endif
 	
 	printf("Init Done\n");
 
@@ -78,4 +93,30 @@ void nrf_RXCallback(u8 *data, u8 length)
         default:
             break;
     }
+}
+
+
+void fjoy_Callback(void)
+{
+	bool interruptStatus;
+	int input = qs_poll_rx(0);
+
+	if (input == QS_NODATA)
+		transmitData.input = '\0';
+	else 
+		transmitData.input = (char)input;		
+	
+	interruptStatus = SafeSei();
+
+	transmitData.yaw = fjoy_status.yaw;
+	transmitData.roll = fjoy_status.roll;
+	transmitData.pitch = fjoy_status.pitch;
+	transmitData.elev = fjoy_status.elev;
+
+	SafeCli(interruptStatus);
+	
+	nrf_StoreAckPayload (&transmitData, sizeof(transmitData));
+
+	memset(lcd_memory, ' ', LCD_MEMORY);
+	sprintf(lcd_memory, "%d", (int)comm_ProcessElev(transmitData.elev));
 }

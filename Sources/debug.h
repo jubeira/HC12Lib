@@ -8,6 +8,8 @@
 #define MAIN_SETPOINT
 #define MAIN_OUTPUT
 
+#define USING_FJOY
+
 //#define TRANSMIT_VEC3
 //#define TRANSMIT_EVEC3
 //#define TRANSMIT_QUAT

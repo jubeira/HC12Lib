@@ -17,6 +17,7 @@
 #include "nRF24L01+.h"
 #include "batt.h"
 #include "lcd.h"
+#include "command_data.h"
 
 // Hardware settings
 #define TRANSMITTER_INIT PTX
@@ -100,16 +101,23 @@ void att_process(void)
 }
 
 
-u8 remote_data_arrived = 0;
+bool remote_data_arrived = _FALSE;
 u8 remote_char = '\0';
+commandData_T receiveData;
 
 void nrf_CheckPayload(bool success, u8 *ackPayload, u8 length)
 {
-    if (length == 1)
+    if (length == sizeof(receiveData))
     {
-        remote_data_arrived = 1;
-        remote_char = *ackPayload;
+        remote_data_arrived = _TRUE;
+        receiveData = *(commandData_T*)ackPayload;
     }
+    else if (length == sizeof(u8))
+    {
+		remote_data_arrived = _TRUE;
+    	remote_char = *ackPayload;
+    }
+    	
 }
 
 
@@ -242,6 +250,7 @@ void main (void)
 #ifdef MAIN_SETPOINT
 
 	while (1) {
+		commandData_T receiveDataCopy;
 		char input;
 		//input = qs_getchar(0);
 
@@ -255,8 +264,14 @@ void main (void)
 			continue;
 
 		asm sei
+	#ifdef USING_FJOY
+		receiveDataCopy = receiveData;
+		input = receiveData.input;
+	#else
 		input = remote_char;
-		remote_data_arrived = 0;
+	#endif
+		
+		remote_data_arrived = _FALSE;
 		asm cli
 		
 #define INCL_REAL 31651
@@ -303,8 +318,12 @@ void main (void)
 			}
 		case 'y':
 			int_Disable = 1;
+			break;
+			
 		case 'u':
 			int_Disable = 0;
+			break;
+			
 		case ' ':
 		case 'q':
 			motData.mode = MOT_MANUAL;
@@ -350,12 +369,21 @@ void main (void)
 			break;
 			
 		default:
-			if (input >= '0' && input <= '9') {
-				int new_thrust = (input - '0')*1500 + 6000;
+			if (receiveDataCopy.input >= '0' && receiveDataCopy.input <= '9') {
+				int new_thrust = (receiveDataCopy.input - '0')*1500 + 6000;
 				setpoint.thrust = new_thrust;
 			}
 			break;
 		}
+		
+	#ifdef USING_FJOY
+	// Joystick code here
+		{
+		u8 elev = receiveDataCopy.elev;
+		setpoint.thrust = comm_ProcessElev(elev);
+		}
+		
+	#endif
 	}
 
 #elif (defined MAIN_OUTPUT) && !(defined MAIN_SETPOINT)
@@ -444,8 +472,8 @@ void main_HandleOutputs(void)
 		#ifdef TRANSMIT_QUAT
 		nrf_Transmit((u8*)(&QEstAux), sizeof(QEstAux), nrf_CheckPayload);
 		#elif ((defined TRANSMIT_EVEC3) || (defined TRANSMIT_VEC3) || (defined TRANSMIT_SPAM))
-		nrf_Transmit((u8*)(&transmitData), sizeof(transmitData), nrf_CheckPayload);
-        	#endif
+		nrf_Transmit((u8*)(&transmitData), sizeof(transmitData), nrf_CheckPayload);      
+        #endif
 	}
 }
 

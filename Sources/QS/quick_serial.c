@@ -105,3 +105,12 @@ void qs_write(int mod, char *buf, unsigned int len)
 		qs_putchar(mod, *(buf++));
 	}
 }
+
+int qs_poll_rx(int mod)
+{
+	int r = QS_NODATA;
+	if(SR1(mod).RDRF)
+		r = (unsigned char)qs_rx(mod);
+	
+	return r;
+}
