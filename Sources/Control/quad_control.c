@@ -132,7 +132,7 @@ void control_mixer(frac thrust, vec3 torque, struct motorData* output)
 	output->speed[0] = gammainv(thrust, 0, torque.y, -torque.z);
 
 	hack = gammainv(thrust, -torque.x, 0, torque.z);
-	output->speed[1] = dtrunc(fexpand(hack) + fmul2(hack, 7000));
+	output->speed[1] = dtrunc(fexpand(hack) + fmul2(hack, 6500));
 
 	output->speed[2] = gammainv(thrust, 0, -torque.y, -torque.z);
 	output->speed[3] = gammainv(thrust, torque.x, 0, torque.z);

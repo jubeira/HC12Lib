@@ -8,6 +8,7 @@
 #include "fjoy.h"
 #include "command_data.h"
 #include "lcd.h"
+#include "debug.h"
 
 #include <stdio.h>
 
@@ -29,11 +30,12 @@ void main (void)
 	qrf_SendJoyMeasurements();
 	qrf_PrintCommInfo();
 */
-	nrf_Receive (nrf_RXCallback);
+//	nrf_Receive (nrf_RXCallback);
 
 	strcpy(lcd_memory, "putas");
 	while (1) {			
 	#ifndef USING_FJOY
+	#warning "not using fjoy"
 		char input = qs_getchar(0);
 		
 		nrf_StoreAckPayload (&input, sizeof(input));
@@ -56,11 +58,13 @@ void Init (void)
 	nrf_Init(PRX);
 
 #ifdef USING_FJOY
+#warning "Using fjoy"
 	fjoy_Init();
-//	fjoy_CallOnUpdate(fjoy_Callback);
-	lcd_Init(LCD_2004);
+	fjoy_CallOnUpdate(fjoy_Callback);
+
 #endif
-	
+
+	lcd_Init(LCD_2004);
 	printf("Init Done\n");
 
 	return;
@@ -117,6 +121,6 @@ void fjoy_Callback(void)
 	
 	nrf_StoreAckPayload (&transmitData, sizeof(transmitData));
 
-//	memset(lcd_memory, '*' , LCD_MEMORY);
-//	sprintf(lcd_memory, "%d", (int)comm_ProcessElev(transmitData.elev));
+	memset(lcd_memory, ' ' , LCD_MEMORY/4);
+	sprintf(lcd_memory, "%d", (int)comm_ProcessElev(transmitData.elev));
 }

@@ -4,12 +4,16 @@ frac comm_ProcessElev(u8 elev)
 {
 	frac thrust;
 	
+	elev <<= 1;
+	
 	if (elev < 20)
 		thrust = 0;
-	else if ((elev > 20) && (elev < 100))
-		thrust = 5000 + (elev-20)*125;
-	else if ((elev > 100) && (elev < 200))
-		thrust = 15000 + (elev-100)*50;
+	else if ((elev >= 20) && (elev < 80))
+		thrust = 5000 + (elev-20)*166;
+	else if ((elev >= 80) && (elev < 200))
+		thrust = 15000 + (elev-80)*50;
 	else
-		thrust = 25000 + (elev-200)*100;	// No debe pasar FRAC_1 = 32000...
+		thrust = 21000 + (elev-200)*80;	// No debe pasar FRAC_1 = 32000...
+	
+	return thrust;
 }
